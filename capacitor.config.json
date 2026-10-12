@@ -1,6 +1,6 @@
 {
   "appId": "com.symphoniertech.itinere",
   "appName": "Itinere",
-  "webDir": "www",
+  "webDir": "public",
   "bundledWebRuntime": false
 }
