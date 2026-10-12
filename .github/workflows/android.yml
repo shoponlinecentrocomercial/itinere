@@ -21,27 +21,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install NPM dependencies (with diagnostics and fallback)
+      - name: Install NPM dependencies
         run: |
-          echo "=== Repo root files ==="
-          ls -la
-          echo "=== Check package.json and package-lock.json presence ==="
-          [ -f package.json ] || { echo "package.json NOT FOUND"; exit 1; }
           if [ -f package-lock.json ]; then
-            echo "package-lock.json FOUND"
-            echo "---- head package-lock.json ----"
-            head -n 40 package-lock.json || true
-            echo "---- lockfileVersion (node) ----"
-            node -e "try{const f=require('./package-lock.json'); console.log('lockfileVersion='+ (f.lockfileVersion||'undefined'));}catch(e){console.error('invalid package-lock.json',e); process.exit(2)}"
+            npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           else
-            echo "package-lock.json NOT FOUND"
-          fi
-
-          echo "=== Try npm ci, fallback to npm install if it fails ==="
-          if npm ci --no-audit --no-fund; then
-            echo "npm ci OK"
-          else
-            echo "npm ci failed — falling back to npm install"
             npm install --no-audit --no-fund
           fi
 
@@ -57,7 +41,6 @@ jobs:
             echo "ERROR: public/index.html not found"
             exit 1
           fi
-          echo "✅ public folder verified"
 
       - name: Initialize Capacitor Android
         run: |
@@ -66,28 +49,14 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Generate App Icons (optional)
-        run: npx capacitor-assets generate --android 2>/dev/null || echo "Assets generation skipped"
-
-      - name: Add Android permissions for GPS / background execution
+      - name: Fix Android build config
         run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ ! -f "$MANIFEST" ]; then
-            echo "ERROR: AndroidManifest.xml not found at $MANIFEST"
-            exit 1
+          if [ -f android/gradle.properties ]; then
+            sed -i 's/-XX:MaxPermSize=[^ ]*//g' android/gradle.properties || true
+            sed -i 's/  / /g' android/gradle.properties || true
           fi
 
-          if ! grep -q "ACCESS_FINE_LOCATION" "$MANIFEST"; then
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' "$MANIFEST"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' "$MANIFEST"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />' "$MANIFEST"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
-          fi
-
-          echo "✅ permisos Android añadidos"
-
-      - name: Install Android SDK command-line tools and platform (sdkmanager)
+      - name: Install Android SDK
         run: |
           set -e
           sudo apt-get update
@@ -105,50 +74,25 @@ jobs:
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> $GITHUB_ENV
           echo "${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}" >> $GITHUB_PATH
 
-      - name: Set up Gradle (runner-provided)
+      - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: '8.1.1'
-          
-      - name: Remove MaxPermSize from gradle.properties
-        run: |
-          if [ -f android/gradle.properties ]; then
-            sed -i 's/-XX:MaxPermSize=[^ ]*//g' android/gradle.properties || true
-            sed -i 's/  / /g' android/gradle.properties || true
-            echo "gradle.properties after change:"
-            grep -n "org.gradle.jvmargs" android/gradle.properties || true
-          fi
-          
+
       - name: Build APK Release
         run: |
           cd android
-          echo "Listing android/gradle and wrapper"
-          ls -la gradle || true
-          ls -la gradle/wrapper || true
-          if command -v gradle >/dev/null 2>&1; then
-            echo "Using runner-provided gradle"
-            gradle assembleRelease --no-daemon
-          else
-            if [ -f "./gradlew" ] && [ -f "./gradle/wrapper/gradle-wrapper.jar" ]; then
-              chmod +x ./gradlew || true
-              ./gradlew assembleRelease --no-daemon
-            else
-              echo "ERROR: No gradle binary and no gradle wrapper jar found (android/gradle/wrapper/gradle-wrapper.jar)."
-              ls -la ./gradle ./gradle/wrapper || true
-              exit 1
-            fi
-          fi
+          gradle assembleRelease --no-daemon
 
-      - name: Find release APK
+      - name: Find APK
         id: find_apk
         run: |
           set -e
           APK_FILE=$(find android/app/build/outputs/apk -type f -name "*release*.apk" | head -n 1 || true)
           if [ -z "$APK_FILE" ]; then
-            echo "No APK found at expected location"
+            echo "No APK found"
             exit 1
           fi
-          echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
           echo "apk_dir=$(dirname "$APK_FILE")" >> $GITHUB_OUTPUT
 
       - name: Sign APK
@@ -161,7 +105,7 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Signed APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: itinere-apk
