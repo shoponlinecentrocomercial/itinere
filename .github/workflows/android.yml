@@ -109,7 +109,16 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: '8.1.1'
-
+          
+      - name: Remove MaxPermSize from gradle.properties
+        run: |
+          if [ -f android/gradle.properties ]; then
+            sed -i 's/-XX:MaxPermSize=[^ ]*//g' android/gradle.properties || true
+            sed -i 's/  / /g' android/gradle.properties || true
+            echo "gradle.properties after change:"
+            grep -n "org.gradle.jvmargs" android/gradle.properties || true
+          fi
+          
       - name: Build APK Release
         run: |
           cd android
