@@ -70,5 +70,5 @@ jobs:
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: midway_gunner_v1
+          name: itinere
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
