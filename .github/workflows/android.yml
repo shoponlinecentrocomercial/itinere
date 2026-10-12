@@ -47,8 +47,6 @@ jobs:
 
       - name: Configure Android Manifest (AdMob & Permissions)
         run: |
-          # Inyectar ID de AdMob
-          sed -i '/<\/application>/i <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
           # Inyectar Permisos de Sensores
           sed -i '/<manifest/a <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="true" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a <uses-feature android:name="android.permission.VIBRATE" android:required="true" />' android/app/src/main/AndroidManifest.xml
