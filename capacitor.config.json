@@ -8,11 +8,6 @@
       "location": true
     }
   },
-  "android": {
-    "allowMixedContent": true,
-    "preferredColorScheme": "light",
-    "androidLaunchMode": "singleTask"
-  },
   "server": {
     "url": "https://itinere.pro:8443",
     "cleartext": false,
@@ -21,5 +16,10 @@
       "*.mapbox.com",
       "*"
     ]
+  },
+  "android": {
+    "allowMixedContent": true,
+    "preferredColorScheme": "light",
+    "androidLaunchMode": "singleTask"
   }
 }
