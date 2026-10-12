@@ -1,6 +1,6 @@
 {
-  "appId": "com.symphoniertech.midway",
-  "appName": "Midway Gunner",
+  "appId": "com.symphoniertech.itinere",
+  "appName": "Itinere",
   "webDir": "www",
   "bundledWebRuntime": false
 }
