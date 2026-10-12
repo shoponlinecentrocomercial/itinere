@@ -1,0 +1,240 @@
+{
+  "meta": {
+    "title": {
+      "index":      "Itinere — comparte rutas fácil y divertido",
+      "acceso":     "Acceder a Itinere",
+      "grabar":     "Grabar ruta — Itinere",
+      "planificar": "Planificar ruta — Itinere",
+      "go":         "Seguir ruta — Itinere",
+      "ruta":       "Recorrer ruta — Itinere",
+      "usuario":    "Perfil — Itinere",
+      "analisis":   "Análisis de ruta — Itinere"
+    },
+    "descripcion": {
+      "index": "Itinere: graba, planifica y comparte rutas con quien quieras. Fácil de usar, divertido, en cualquier dispositivo."
+    }
+  },
+
+  "nav": {
+    "home":       "Inicio",
+    "rutas":      "Rutas",
+    "mias":       "Mías",
+    "perfil":     "Perfil",
+    "grabar":     "Grabar ruta",
+    "ruta":       "Recorrer ruta",
+    "planificar": "Planificar ruta",
+    "menu":       "Menú",
+    "salir":      "Cerrar sesión"
+  },
+
+  "home": {
+    "hero": {
+      "titulo":    "Descubre tu próxima ruta",
+      "subtitulo": "Graba, planifica y comparte. Sin complicaciones."
+    },
+    "buscador": "Buscar rutas, lugares, autores…",
+    "ultimas":  "Últimas rutas",
+    "vacio":    "No hay rutas todavía.",
+    "nueva": { "titulo": "¿Qué quieres hacer?" }
+  },
+
+  "filtros": {
+    "todas": "Todas", "cerca": "Cerca", "senderismo": "Senderismo",
+    "bici": "Bici", "coche": "Coche", "moto": "Moto"
+  },
+
+  "acceso": {
+    "bienvenido": "Bienvenido a Itinere",
+    "subtitulo":  "Comparte tus rutas con quien quieras",
+    "email":      "tu@email.com",
+    "continuarEmail": "Continuar con email",
+    "o":          "o continúa con",
+    "biometrico": "Huella / Face ID",
+    "codigoEnviado": "Te hemos enviado un código a",
+    "validar":    "Validar código",
+    "atras":      "← Usar otro email",
+    "terminos":   "Términos",
+    "privacidad": "Privacidad"
+  },
+
+  "errores": {
+    "emailInvalido":   "Email no válido.",
+    "claveCorta":      "El código debe tener 6 cifras.",
+    "claveIncorrecta": "Código incorrecto.",
+    "redClave":        "Error de red al pedir el código.",
+    "redValidacion":   "Error de red al validar el código.",
+    "geo":             "Sin datos de ubicación. Actívala y reintenta.",
+    "geoUnsupported":  "Tu navegador no soporta geolocalización.",
+    "retry":           "Reintentar",
+    "continuar":  "Continuar sin GPS"
+  },
+
+  "ruta": {
+    "distanciaCorta": "km",
+    "tiempo": "tiempo",
+    "distancia": "distancia",
+    "marcha": "marcha",
+    "descanso": "descanso",
+    "altBase": "alt. base",
+    "altPico": "alt. pico",
+    "ascenso": "ascenso",
+    "descenso": "descenso",
+    "velocidad": "velocidad",
+    "desnivel": "desnivel",
+    "metros": "metros",
+    "iniciar":          "Iniciar",
+    "detener":          "Detener",
+    "seguir":           "Seguir",
+    "avance":           "Avance",
+    "recorrido":        "recorrido",
+    "faltan":           "faltan",
+    "completado":       "completado",
+    "completada":       "¡Ruta completada!",
+    "completadaHint":   "Hemos registrado tu actividad.",
+    "bien":             "¡Bien!",
+    "velmax":           "vel. máx",
+    "lejos":            "Estás lejos del inicio.",
+    "lejosHint":        "Acércate al punto de partida y reintentaremos automáticamente.",
+    "cargando":         "Localizando tu posición y cargando la ruta…",
+    "elevacion":        "Perfil de elevación",
+    "elevacionHint":    "Arrastra sobre el gráfico para hacer zoom a ese tramo en el mapa.",
+    "fotos":            "Fotos",
+    "config": {
+      "titulo":         "Configuración",
+      "full":           "Pantalla completa",
+      "alarmaGPS":      "Alarma pérdida GPS",
+      "alarmaDesvio":   "Alarma de desvío",
+      "bolsillo":       "Modo bolsillo",
+      "bolsilloHint":   "Pantalla negra para llevar el móvil sin desbloquearlo accidentalmente."
+    }
+  },
+
+  "grabar": {
+    "empezar":   "Empezar",
+    "parar":     "Parar",
+    "detalles":  "Detalles",
+    "cargando":  "Activando GPS y cargando mapa…",
+    "saltar":    "Continuar sin esperar precisión",
+    "velmax":    "Vel. máx",
+    "velmed":    "Vel. media",
+    "tiempos":   "Tiempos",
+    "altitud":   "Altitud",
+    "pendientes":"Pendientes",
+    "tipoRuta":  "Tipo de ruta",
+    "dificultad":"Dificultad",
+    "fotos":     "Fotos",
+    "fallos":    "Lecturas imprecisas",
+    "verAnalisis":"Ver análisis energético",
+    "guardar": {
+      "titulo": "Guardar ruta",
+      "nombre": "Nombre",
+      "tipo":   "Tipo de ruta",
+      "descripcion": "Descripción",
+      "privada": "Ruta privada",
+      "privadaHint": "Sólo visible para ti y tus invitados."
+    },
+    "config": {
+      "titulo":   "Configuración",
+      "full":     "Pantalla completa",
+      "compartir":"Compartir la ruta",
+      "urlPubli": "URL de publicación:",
+      "imperial": "Sistema imperial",
+      "alarmaGPS":"Alarma pérdida GPS",
+      "bolsillo": "Modo bolsillo",
+      "bolsilloHint": "Pantalla negra para llevar el móvil sin desbloquearlo accidentalmente."
+    },
+    "bolsillo": {
+      "titulo": "Modo Bolsillo",
+      "texto":  "El modo bolsillo apaga la pantalla sin suspender el teléfono. Desliza desde el borde izquierdo para volver.",
+      "ok":     "Entendido"
+    },
+    "foto": { "publicar": "Publicar foto" }
+  },
+
+  "planificar": {
+    "empezar":    "Empezar a trazar",
+    "parar":      "Parar",
+    "cargando":   "Preparando mapa…",
+    "deshacer":   "Deshacer",
+    "joystick":   "Joystick",
+    "acelerador": "Acelerador",
+    "joystickHelp": "Tap \"Empezar\" y arrastra el círculo para dirigir la ruta.",
+    "guardar":    { "titulo": "Guardar planificación" }
+  },
+
+  "go": {
+    "titulo":   "Siguiendo ruta",
+    "empezar":  "Empezar a seguir",
+    "pausar":   "Pausar",
+    "desvio":   "Te has salido de la ruta",
+    "terminado":"Recorrido terminado",
+    "terminadoTexto": "¡Ruta completada! Tu actividad se ha guardado."
+  },
+
+  "info": {
+    "dificultadLabel": "Dificultad",
+    "publicado":       "Publicado",
+    "descripcionLabel":"Descripción",
+    "tiempos":         "Tiempos y ubicación",
+    "energiaHint":     "¿Quieres saber la huella energética y de CO₂ de esta ruta?",
+    "recorrer":        "Recorrer la ruta"
+  },
+
+  "perfil": {
+    "km":           "Km",
+    "creadas":      "Creadas",
+    "recorridas":   "Recorridas",
+    "misCreadas":   "Mis creadas",
+    "misRecorridas":"Recorridas",
+    "favoritas":    "Favoritas",
+    "emailWarning": "Sin email no podrás recuperar tu cuenta si pierdes el acceso desde este dispositivo.",
+    "emailNuevo":          "Nuevo email",
+    "emailVerifInfo":      "Te enviaremos un código a esa dirección para confirmar que es tuya.",
+    "emailEnviarCodigo":   "Enviar código",
+    "emailCodigoEnviado":  "Hemos enviado un código a tu nuevo email. Introdúcelo aquí.",
+    "emailCodigo":         "Código (6 dígitos)"
+  },
+
+  "ajustes": {
+    "titulo":       "Ajustes",
+    "idioma":       "Idioma",
+    "idiomaHint":   "Se detecta automáticamente del dispositivo.",
+    "unidades":     "Unidades",
+    "metric":       "Métrico",
+    "imperial":     "Imperial",
+    "tema":         "Tema",
+    "auto":         "Auto",
+    "claro":        "Claro",
+    "oscuro":       "Oscuro",
+    "borrarCuenta": "Borrar cuenta"
+  },
+
+  "analisis": {
+    "titulo":     "Análisis avanzado",
+    "intro":      "Estimación energética, muscular y ambiental de la ruta. Ajusta tu peso para un cálculo más preciso.",
+    "peso":       "Tu peso",
+    "pesoHelp":   "Usado para calcular calorías, fuerza muscular y consumo equivalente.",
+    "energia":    "Energía empleada",
+    "tipo":       "Tipo",
+    "consumo":    "Consumo",
+    "huella":     "Huella CO₂",
+    "metabolica": "Metabólica",
+    "muscular":   "Muscular",
+    "electrica":  "Eléctrica",
+    "gasolina":   "Gasolina",
+    "gasoil":     "Gasoil",
+    "glp":        "GLP",
+    "etanol":     "Etanol",
+    "hidrogeno":  "Hidrógeno",
+    "hidrogenoNota": "El hidrógeno verde no deja huella.",
+    "disclaimer": "Los datos son una estimación basada en valores estándar."
+  },
+
+  "boton": {
+    "verMas":   "Ver más",
+    "guardar":  "Guardar",
+    "cancelar": "Cancelar",
+    "cerrar":   "Cerrar",
+    "confirmar":"Confirmar"
+  }
+}
