@@ -2,5 +2,24 @@
   "appId": "com.symphoniertech.itinere",
   "appName": "Itinere",
   "webDir": "public",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "Geolocation": {
+      "location": true
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "preferredColorScheme": "light",
+    "androidLaunchMode": "singleTask"
+  },
+  "server": {
+    "url": "https://itinere.pro:8443",
+    "cleartext": false,
+    "allowNavigation": [
+      "*.itinere.pro",
+      "*.mapbox.com",
+      "*"
+    ]
+  }
 }
