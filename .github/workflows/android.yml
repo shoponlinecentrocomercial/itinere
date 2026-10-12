@@ -7,8 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +40,6 @@ jobs:
 
       - name: Initialize Capacitor Android
         run: |
-          # Añadir plataforma Android si no existe y sincronizar
           if [ ! -d "android" ]; then
             npx cap add android
           fi
@@ -74,16 +71,15 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y unzip wget
+          # Usar el directorio temporal del runner para evitar permisos y persistencia innecesaria
+          ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
           mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
           cd "${ANDROID_SDK_ROOT}"
-          # Descargar command line tools (Linux). Si cambia la URL de Google, actualiza la versión.
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline.zip
           unzip -q cmdline.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
-          # Mover la carpeta a 'latest' para sdkmanager path coherente
           mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest" || true
           rm cmdline.zip
           export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
-          # Aceptar licencias y descargar plataforma y build-tools
           yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses || true
           sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> $GITHUB_ENV
@@ -97,30 +93,34 @@ jobs:
       - name: Build APK Release
         run: |
           cd android
-          # Si el proyecto requiere que gradlew sea ejecutable y está versionado:
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew || true
           fi
-          # Usar gradle del runner (instalado por gradle action)
-          gradle assembleRelease --no-daemon
+          # preferir el wrapper si existe, si no usar gradle del runner
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            gradle assembleRelease --no-daemon
+          fi
 
       - name: Find release APK
         id: find_apk
         run: |
           set -e
-          # Buscar el APK producido
-          APK_PATH=$(find android/app/build/outputs/apk -type f -name "*release*.apk" | head -n 1 || true)
-          if [ -z "$APK_PATH" ]; then
+          APK_FILE=$(find android/app/build/outputs/apk -type f -name "*release*.apk" | head -n 1 || true)
+          if [ -z "$APK_FILE" ]; then
             echo "No APK found at expected location"
             exit 1
           fi
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
+          echo "apk_dir=$(dirname "$APK_FILE")" >> $GITHUB_OUTPUT
 
       - name: Sign APK
         id: sign_app
         uses: r0adkll/sign-android-release@v1
         with:
-          releaseDirectory: ${{ steps.find_apk.outputs.apk_path }}
+          # sign-android-release expects the releaseDirectory (folder) where unsigned apks are located
+          releaseDirectory: ${{ steps.find_apk.outputs.apk_dir }}
           signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
           alias: ${{ secrets.KEYSTORE_ALIAS }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
