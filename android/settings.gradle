@@ -14,5 +14,13 @@ dependencyResolutionManagement {
     }
 }
 
+// existing content...
 rootProject.name = "Itinere"
 include ':app'
+
+// Add these lines to reference Capacitor in node_modules
+include ':capacitor-android'
+project(':capacitor-android').projectDir = file('../node_modules/@capacitor/android')
+
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = file('../node_modules/@capacitor/cordova-android-plugins')
