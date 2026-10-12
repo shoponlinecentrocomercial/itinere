@@ -21,10 +21,31 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install NPM dependencies
+      - name: Install NPM dependencies (with diagnostics and fallback)
         run: |
-          npm ci
-          npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/geolocation @capacitor-community/admob @capacitor/assets
+          echo "=== Repo root files ==="
+          ls -la
+          echo "=== Check package.json and package-lock.json presence ==="
+          [ -f package.json ] || { echo "package.json NOT FOUND"; exit 1; }
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json FOUND"
+            echo "---- head package-lock.json ----"
+            head -n 40 package-lock.json || true
+            echo "---- lockfileVersion (node) ----"
+            node -e "try{const f=require('./package-lock.json'); console.log('lockfileVersion='+ (f.lockfileVersion||'undefined'));}catch(e){console.error('invalid package-lock.json',e); process.exit(2)}"
+          else
+            echo "package-lock.json NOT FOUND"
+          fi
+
+          echo "=== Try npm ci, fallback to npm install if it fails ==="
+          if npm ci --no-audit --no-fund; then
+            echo "npm ci OK"
+          else
+            echo "npm ci failed — falling back to npm install"
+            npm install --no-audit --no-fund
+          fi
+
+          npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/geolocation @capacitor-community/admob @capacitor/assets --no-audit --no-fund
 
       - name: Verify public folder
         run: |
@@ -71,7 +92,6 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y unzip wget
-          # Usar el directorio temporal del runner para evitar permisos y persistencia innecesaria
           ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
           mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
           cd "${ANDROID_SDK_ROOT}"
@@ -96,7 +116,6 @@ jobs:
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew || true
           fi
-          # preferir el wrapper si existe, si no usar gradle del runner
           if [ -f "./gradlew" ]; then
             ./gradlew assembleRelease --no-daemon
           else
@@ -119,7 +138,6 @@ jobs:
         id: sign_app
         uses: r0adkll/sign-android-release@v1
         with:
-          # sign-android-release expects the releaseDirectory (folder) where unsigned apks are located
           releaseDirectory: ${{ steps.find_apk.outputs.apk_dir }}
           signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
           alias: ${{ secrets.KEYSTORE_ALIAS }}
