@@ -23,7 +23,7 @@ jobs:
           npm install
           npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/geolocation @capacitor-community/admob @capacitor/assets
 
-      - name: Verify public folder exists
+      - name: Verify public folder
         run: |
           if [ ! -d "public" ]; then
             echo "ERROR: public folder not found"
@@ -33,7 +33,6 @@ jobs:
             echo "ERROR: public/index.html not found"
             exit 1
           fi
-          echo "✅ public folder verified"
 
       - name: Initialize Capacitor Android
         run: |
@@ -42,7 +41,7 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Add Android permissions for GPS / background execution
+      - name: Add GPS / background location permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
 
@@ -54,9 +53,7 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
           fi
 
-          echo "✅ permisos Android añadidos"
-
-      - name: Build APK Release
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
