@@ -14,7 +14,7 @@
     "@capacitor/android": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/geolocation": "^6.0.0",
-    "@simplewebauthn/server": "^0.15.0",
+    "@simplewebauthn/server": "^1.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "express": "^4.18.2",
