@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install
+          npm ci
           npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/geolocation @capacitor-community/admob @capacitor/assets
 
       - name: Verify public folder
@@ -33,6 +33,7 @@ jobs:
             echo "ERROR: public/index.html not found"
             exit 1
           fi
+          echo "✅ public folder verified"
 
       - name: Initialize Capacitor Android
         run: |
@@ -41,9 +42,17 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Add GPS / background location permissions
+      - name: Generate App Icons
+        run: npx capacitor-assets generate --android 2>/dev/null || echo "Assets skipped"
+
+      - name: Add Android permissions for GPS / background execution
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
+
+          if [ ! -f "$MANIFEST" ]; then
+            echo "ERROR: AndroidManifest.xml not found at $MANIFEST"
+            exit 1
+          fi
 
           if ! grep -q "ACCESS_FINE_LOCATION" "$MANIFEST"; then
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' "$MANIFEST"
@@ -53,11 +62,17 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
           fi
 
-      - name: Build APK
+          echo "✅ permisos Android añadidos"
+
+      - name: Set up Gradle (runner-provided)
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '8.1.1'
+
+      - name: Build APK Release
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
+          gradle assembleRelease --no-daemon
 
       - name: Sign APK
         id: sign_app
