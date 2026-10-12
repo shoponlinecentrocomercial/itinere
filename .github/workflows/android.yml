@@ -1,9 +1,14 @@
 name: Build Android APK
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +23,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install NPM dependencies
         run: |
           npm ci
           npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/geolocation @capacitor-community/admob @capacitor/assets
@@ -37,18 +42,18 @@ jobs:
 
       - name: Initialize Capacitor Android
         run: |
+          # Añadir plataforma Android si no existe y sincronizar
           if [ ! -d "android" ]; then
             npx cap add android
           fi
           npx cap sync android
 
-      - name: Generate App Icons
-        run: npx capacitor-assets generate --android 2>/dev/null || echo "Assets skipped"
+      - name: Generate App Icons (optional)
+        run: npx capacitor-assets generate --android 2>/dev/null || echo "Assets generation skipped"
 
       - name: Add Android permissions for GPS / background execution
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-
           if [ ! -f "$MANIFEST" ]; then
             echo "ERROR: AndroidManifest.xml not found at $MANIFEST"
             exit 1
@@ -64,6 +69,26 @@ jobs:
 
           echo "✅ permisos Android añadidos"
 
+      - name: Install Android SDK command-line tools and platform (sdkmanager)
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+          mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+          cd "${ANDROID_SDK_ROOT}"
+          # Descargar command line tools (Linux). Si cambia la URL de Google, actualiza la versión.
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
+          # Mover la carpeta a 'latest' para sdkmanager path coherente
+          mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest" || true
+          rm cmdline.zip
+          export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
+          # Aceptar licencias y descargar plataforma y build-tools
+          yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses || true
+          sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> $GITHUB_ENV
+          echo "${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}" >> $GITHUB_PATH
+
       - name: Set up Gradle (runner-provided)
         uses: gradle/gradle-build-action@v2
         with:
@@ -72,19 +97,36 @@ jobs:
       - name: Build APK Release
         run: |
           cd android
+          # Si el proyecto requiere que gradlew sea ejecutable y está versionado:
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew || true
+          fi
+          # Usar gradle del runner (instalado por gradle action)
           gradle assembleRelease --no-daemon
+
+      - name: Find release APK
+        id: find_apk
+        run: |
+          set -e
+          # Buscar el APK producido
+          APK_PATH=$(find android/app/build/outputs/apk -type f -name "*release*.apk" | head -n 1 || true)
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK found at expected location"
+            exit 1
+          fi
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
 
       - name: Sign APK
         id: sign_app
         uses: r0adkll/sign-android-release@v1
         with:
-          releaseDirectory: android/app/build/outputs/apk/release
+          releaseDirectory: ${{ steps.find_apk.outputs.apk_path }}
           signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: mi-alias
+          alias: ${{ secrets.KEYSTORE_ALIAS }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload APK
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: itinere-apk
