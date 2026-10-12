@@ -1,1 +1,12 @@
-/itinere.env
+node_modules/
+.env
+.env.local
+.env.*
+!.env.example
+android/
+www/
+dist/
+*.apk
+*.aab
+*.log
+.DS_Store
