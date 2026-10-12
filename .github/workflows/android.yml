@@ -113,13 +113,21 @@ jobs:
       - name: Build APK Release
         run: |
           cd android
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew || true
-          fi
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleRelease --no-daemon
-          else
+          echo "Listing android/gradle and wrapper"
+          ls -la gradle || true
+          ls -la gradle/wrapper || true
+          if command -v gradle >/dev/null 2>&1; then
+            echo "Using runner-provided gradle"
             gradle assembleRelease --no-daemon
+          else
+            if [ -f "./gradlew" ] && [ -f "./gradle/wrapper/gradle-wrapper.jar" ]; then
+              chmod +x ./gradlew || true
+              ./gradlew assembleRelease --no-daemon
+            else
+              echo "ERROR: No gradle binary and no gradle wrapper jar found (android/gradle/wrapper/gradle-wrapper.jar)."
+              ls -la ./gradle ./gradle/wrapper || true
+              exit 1
+            fi
           fi
 
       - name: Find release APK
