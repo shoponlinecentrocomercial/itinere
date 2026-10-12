@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>
+var base="https://itinere.pro/";
+var id=0;
+fetch('/read-cookie', { credentials: 'include' })
+    .then(r => r.json())
+    .then(d => { 
+        if (d.logueado) id = d.id; 
+        if (id===0) {
+            location.href='https://itinere.pro/acceso.html?pag=grabar-ruta';
+        }
+});
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="theme-color" content="#FFF8F0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#14172A" media="(prefers-color-scheme: dark)">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://itinere.pro https://itinere.pro:2083; connect-src 'self' https://itinere.pro https://itinere.pro:2083 wss://itinere.pro:2083; script-src 'self' 'unsafe-inline' https://itinere.pro https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://itinere.pro https://www.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https://itinere.pro; font-src 'self' data:; frame-src https://itinere.pro:2083; object-src 'none';">
+
+    <title data-i18n="meta.title.grabar">Grabar ruta — Itinere</title>
+
+    <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/img/generated/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <link rel="stylesheet" href="https://itinere.pro/css/tokens.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/base.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/components.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/leaflet-1-6-0.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/estilos.css">
+
+    <script src="https://itinere.pro/js/leaflet-1-6-0.js"></script>
+    <script src="https://itinere.pro/js/chartsloader.js"></script>
+    <script src="https://itinere.pro/js/html2canvas.min.js"></script>
+    <script src="https://itinere.pro/js/Leaflet.MultiOptionsPolyline.min.js"></script>
+    <script src="https://itinere.pro/js/variables.js"></script>
+    <script src="https://itinere.pro/js/funciones.js"></script>
+    <script src="https://itinere.pro/js/mapa_nuevo.js"></script>
+    <!-- socket.js y selfie.js eliminados: dependen de #btn-selfie / io()
+         que no existen en esta página. -->
+    <!-- extramarkers.js eliminado: era CSS disfrazado de JS, rompía con
+         SyntaxError. Se sustituirá por link CSS si se necesitan markers. -->
+    <script src="https://itinere.pro/js/i18n.js" defer></script>
+    <script src="https://itinere.pro/js/components.js" defer></script>
+
+    <style>
+        body { background: var(--c-canvas); overflow: hidden; }
+
+        /* Mapa fullscreen entre appbar y la zona inferior */
+        #mimapa {
+            position: fixed; left: 0; right: 0;
+            top: calc(var(--header-h) + var(--safe-top));
+            bottom: 0;
+            z-index: 1;
+        }
+        #tipo-tokens { font-size:12px; }
+        #tokens { font-size:12px; }
+        /* Hero stats: velocidad/distancia/tiempo en fila bajo la appbar */
+        .live-stats {
+            position: fixed; left: 0; right: 0;
+            top: calc(var(--header-h) + var(--safe-top));
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: var(--sp-2);
+            padding: var(--sp-3) var(--sp-4);
+            background: linear-gradient(180deg, var(--c-canvas), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+        .live-stat {
+            background: var(--c-glass);
+            backdrop-filter: blur(12px) saturate(180%);
+            border-radius: var(--r-lg);
+            padding: var(--sp-2) var(--sp-3);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .live-stat__value {
+            font-family: var(--font-display);
+            font-size: var(--fs-xl);
+            font-weight: var(--fw-black);
+            line-height: 1;
+            color: var(--c-ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .live-stat__label {
+            font-size: var(--fs-xs);
+            color: var(--c-ink-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-top: 2px;
+        }
+
+        /* GPS chip fixed */
+        .gps-pin {
+            position: fixed;
+            top: calc(var(--header-h) + var(--safe-top) + 110px);
+            right: var(--sp-4);
+            z-index: 3;
+        }
+
+        /* Mini brújula esquina inferior izquierda del mapa */
+        .compass {
+            position: fixed;
+            bottom: calc(180px + var(--safe-bottom));
+            right: var(--sp-4);
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: var(--c-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--c-border);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 3;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Action bar inferior con STOP/PLAY central */
+        .action-bar {
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            padding: var(--sp-4) var(--sp-4) calc(var(--safe-bottom) + var(--sp-4));
+            display: grid;
+            grid-template-columns: 56px 1fr 56px;
+            gap: var(--sp-3);
+            align-items: center;
+            z-index: var(--z-sticky);
+            background: linear-gradient(0deg, var(--c-canvas), transparent);
+        }
+
+        /* Fila secundaria encima de la action-bar: post-it, lupa, detalles, linea, grafico */
+        .secondary-bar {
+            position: fixed;
+            left: 0; right: 0;
+            bottom: calc(96px + var(--safe-bottom));
+            padding: 0 var(--sp-4);
+            display: grid;
+            grid-template-columns: 56px 1fr 56px 1fr 56px;
+            gap: var(--sp-3);
+            align-items: center;
+            z-index: var(--z-sticky);
+            pointer-events: none;
+        }
+        .secondary-bar > * { pointer-events: auto; justify-self: center; }
+        .secondary-bar .pill-btn {
+            min-height: 36px;
+            padding: var(--sp-2) var(--sp-3);
+            background: var(--c-surface);
+            border-radius: var(--r-pill);
+            box-shadow: var(--shadow-md);
+            color: var(--c-ink);
+            font-size: var(--fs-sm); font-weight: var(--fw-bold);
+            display: inline-flex; align-items: center; gap: 6px;
+            border: none; cursor: pointer;
+        }
+        .secondary-bar .mini-btn {
+            width: 40px; height: 40px;
+            background: var(--c-surface);
+            border-radius: 50%;
+            box-shadow: var(--shadow-md);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--c-ink);
+            border: none; cursor: pointer;
+            padding: 0;
+        }
+        .secondary-bar .mini-btn[data-state="on"] {
+            background: var(--c-accent);
+            color: var(--c-on-accent);
+        }
+
+        /* Wrap del chart con background propio (mismo color/opacidad que dentro del chart) */
+        #mychart-wrap {
+            position: fixed;
+            left: 0; right: 0;
+            /* su bottom queda alineado con el top del botón Detalles
+               (action-bar 96px + safe-bottom + altura del btn Detalles ~36px) */
+            bottom:  calc(96px + var(--safe-bottom) + 44px);
+            min-height: 120px;
+            height: 140px;
+            background: rgba(255, 255, 255, .3);
+            backdrop-filter: blur(8px) saturate(140%);
+         //   border-top: 1px solid var(--c-border);
+           // border-bottom: 1px solid var(--c-border);
+            z-index: 2;
+            display: none;        /* visible cuando hay puntos */
+        }
+        @media (prefers-color-scheme: dark) {
+            #mychart-wrap { background: rgba(20, 23, 42, .3); }
+        }
+        #mychart {
+            position: absolute;
+            inset: 0;
+        }
+
+        /* Popover para los selectores de línea / gráfico */
+        .popover-select {
+            position: fixed;
+            bottom: calc(96px + var(--safe-bottom) + 50px);
+            background: var(--c-surface);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--c-border);
+            padding: var(--sp-2);
+            z-index: var(--z-modal);
+            display: none;
+            min-width: 160px;
+        }
+        .popover-select.is-open { display: block; }
+        .popover-select button {
+            display: block; width: 100%;
+            padding: var(--sp-2) var(--sp-3);
+            background: transparent; border: none;
+            text-align: left; color: var(--c-ink);
+            font-size: var(--fs-md);
+            border-radius: var(--r-sm);
+            cursor: pointer;
+        }
+        .popover-select button:hover,
+        .popover-select button[aria-selected="true"] {
+            background: var(--c-surface-2);
+            color: var(--c-accent);
+            font-weight: var(--fw-bold);
+        }
+        .action-bar .iconbtn {
+            background: var(--c-surface);
+            box-shadow: var(--shadow-md);
+        }
+        .btn-grabar {
+            min-height: 64px;
+            font-size: var(--fs-lg);
+            border-radius: var(--r-pill);
+            background: var(--c-accent);
+            color: var(--c-on-accent);
+            box-shadow: var(--shadow-accent);
+            display: flex; align-items: center; justify-content: center;
+            gap: var(--sp-2); font-family: var(--font-display); font-weight: var(--fw-black);
+            transition: all var(--t-quick);
+        }
+        .btn-grabar:active { transform: scale(.97); }
+        .btn-grabar[data-state="rec"] {
+            background: var(--c-danger);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(255, 23, 68, .45);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 8px 24px rgba(255, 23, 68, .45); }
+            50%      { box-shadow: 0 8px 32px rgba(255, 23, 68, .8); }
+        }
+
+        /* Bottom sheet para detalles */
+        .details-sheet {
+            position: fixed; left: 0; right: 0; bottom: 0;
+            background: var(--c-surface);
+            border-radius: var(--r-xl) var(--r-xl) 0 0;
+            box-shadow: var(--shadow-lg);
+            padding: var(--sp-3) var(--sp-5) calc(var(--safe-bottom) + 96px);
+            z-index: var(--z-overlay);
+            transform: translateY(calc(100% - 0px));
+            transition: transform var(--t-slow);
+            max-height: 80dvh; overflow-y: auto;
+        }
+        .details-sheet.is-open { transform: translateY(0); }
+        .details-sheet__handle-wrap {
+            height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            margin: 0 0 var(--sp-2);
+        }
+        .details-sheet__handle {
+            width: 48px; height: 5px;
+            background: var(--c-border-strong);
+            border-radius: var(--r-pill);
+        }
+        .details-sheet__close {
+            position: absolute;
+            top: 10px; right: 12px;
+            width: 40px; height: 40px;
+            background: var(--c-surface-2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--c-ink);
+            box-shadow: var(--shadow-sm);
+            z-index: 1;
+        }
+        .details-sheet__close:active { transform: scale(.94); }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--sp-3);
+        }
+        .stats-grid .stat { padding: var(--sp-3); }
+
+        .section-block { margin-top: var(--sp-5); }
+        .section-block h3 {
+            font-size: var(--fs-sm); text-transform: uppercase;
+            letter-spacing: .08em; color: var(--c-ink-muted);
+            margin: 0 0 var(--sp-3); font-weight: var(--fw-bold);
+        }
+
+        /* Sheets de Configuración / Guardar / Bolsillo / Cámara */
+        .modal-sheet {
+            position: fixed; inset: 0;
+            background: var(--c-canvas);
+            z-index: var(--z-modal);
+            transform: translateX(100%);
+            transition: transform var(--t-slow);
+            display: flex; flex-direction: column;
+        }
+        .modal-sheet.is-open { transform: translateX(0); }
+        .modal-sheet__head {
+            padding: calc(var(--safe-top) + var(--sp-4)) var(--sp-4) var(--sp-4);
+            display: flex; align-items: center; gap: var(--sp-3);
+            border-bottom: 1px solid var(--c-border);
+        }
+        .modal-sheet__head h2 { margin: 0; font-size: var(--fs-lg); }
+        .modal-sheet__body { flex: 1; overflow-y: auto; padding: var(--sp-4); }
+        .modal-sheet__footer {
+            padding: var(--sp-4) var(--sp-4) calc(var(--safe-bottom) + var(--sp-4));
+            border-top: 1px solid var(--c-border);
+            display: flex; gap: var(--sp-3);
+            background: var(--c-surface);
+        }
+        .modal-sheet__footer .btn { flex: 1; }
+
+        .switch-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-border);
+        }
+        .switch-row__label { color: var(--c-ink); font-size: var(--fs-md); }
+        .switch-row__hint  { color: var(--c-ink-muted); font-size: var(--fs-sm); margin-top: 2px; }
+
+        /* Cámara overlay */
+        #divFoto { background: #000; }
+        #tomarFoto {
+            position: fixed; bottom: calc(var(--safe-bottom) + var(--sp-5));
+            left: 50%; transform: translateX(-50%);
+            width: 64px; height: 64px;
+            background: var(--c-danger);
+            border-radius: 50%; border: 4px solid #fff;
+            z-index: 1000000002;
+            box-shadow: 0 8px 24px rgba(0,0,0,.45);
+        }
+        .cam-close {
+            position: fixed;
+            top: calc(var(--safe-top) + var(--sp-3));
+            left: var(--sp-3);
+            width: 44px; height: 44px;
+            background: rgba(0,0,0,.5);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff;
+            z-index: 1000000002;
+        }
+
+        /* Pantalla bolsillo */
+        #bolsillo { background: #000; color: #fff; padding: var(--sp-5); }
+        #bolsillo h1 { color: #fff; }
+
+        /* Carga inicial */
+        .loading-overlay {
+            position: fixed;
+            top: calc(var(--header-h) + var(--safe-top));
+            left: 0; right: 0; bottom: 0;
+            background: var(--c-canvas);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: var(--sp-3);
+            z-index: 4;
+        }
+        .loading-overlay .skeleton-bar {
+            width: 200px; height: 4px;
+            background: var(--c-border);
+            border-radius: var(--r-pill);
+            overflow: hidden;
+        }
+        #progreso { height: 100%; background: var(--c-accent); width: 0%; transition: width 200ms; }
+
+        /* IDs legacy ocultos (el JS escribe en ellos pero no son visibles) */
+        .legacy-shadow { position: absolute; left: -9999px; visibility: hidden; }
+
+        /* Errores de geo */
+        .alert-banner {
+            position: fixed;
+            top: calc(var(--safe-top) + var(--sp-2));
+            left: var(--sp-3); right: var(--sp-3);
+            background: var(--c-warning); color: #000;
+            border-radius: var(--r-md);
+            padding: var(--sp-3) var(--sp-4);
+            z-index: 1000000018;
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .alert-banner { background: var(--c-highlight); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AppBar -->
+    <header class="appbar">
+        <a href="/index.html" class="iconbtn" aria-label="Atrás">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <span class="appbar__logo">
+            <img src="/img/logo.svg" width="28" height="28" alt="">
+            <span data-i18n="nav.grabar">Grabar ruta</span>
+            <span id='tipo-tokens'>PuT:</span>
+            <span id='tokens'>0</span>
+        </span>
+        <span class="appbar__spacer"></span>
+        <button class="iconbtn" id="btn-config" aria-label="Configuración">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+    </header>
+
+    <!-- Mapa -->
+    <div id="mimapa"></div>
+
+    <!-- Stats en vivo (sobre el mapa) -->
+    <div class="live-stats" aria-live="polite">
+        <div class="live-stat">
+            <div class="live-stat__value"><span id="velocidad">0</span></div>
+            <div class="live-stat__label"><span id="unidadVel">km/h</span></div>
+        </div>
+        <div class="live-stat">
+            <div class="live-stat__value"><span id="distancia">0</span></div>
+            <div class="live-stat__label"><span id="unidadDis">m</span></div>
+        </div>
+        <div class="live-stat">
+            <div class="live-stat__value"><span id="horas">00</span>:<span id="minutos">00</span>:<span id="segundos">00</span></div>
+            <div class="live-stat__label" data-i18n="ruta.tiempo">tiempo</div>
+        </div>
+    </div>
+
+    <!-- GPS chip -->
+    <itinere-gps-chip class="gps-pin" status="ok" id="gpsChip"></itinere-gps-chip>
+
+    <!-- Brújula compacta sobre el mapa -->
+    <div class="compass" aria-label="Brújula">
+        <div id="ptBrujula" style="width:48px;height:48px;border-radius:50%;border:2px dashed var(--c-ink-muted);display:flex;align-items:center;justify-content:center;transition:transform 1s ease;">
+            <div id="brujula" style="height:12px;width:36px;border-left:2px solid var(--c-primary);border-right:2px solid var(--c-primary);transition:transform 1s ease;display:flex;align-items:center;justify-content:center;">
+                <div id="antibrujula" style="width:24px;height:2px;border-top:2px solid var(--c-primary);transition:transform 1s ease;display:flex;align-items:center;justify-content:center;">
+                    <span id="gradosnow" style="font-size:10px;font-weight:bold;color:var(--c-ink);">0</span><span style="font-size:10px;color:var(--c-ink);">°</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avisos -->
+    <div id="errorGeo" class="alert-banner">
+        <strong data-i18n="errores.geo">Sin datos de ubicación.</strong>
+        <div style="margin-top:var(--sp-2);display:flex;gap:var(--sp-2);">
+            <button class="btn btn--ghost" style="min-height:40px;padding:0 var(--sp-3);" onclick="location.reload()" data-i18n="errores.retry">Reintentar</button>
+            <button class="btn btn--ghost" style="min-height:40px;padding:0 var(--sp-3);" onclick="singeo()">Continuar sin geo</button>
+        </div>
+    </div>
+    <div id="infoNo" class="alert-banner" data-i18n="errores.geoUnsupported">
+        Tu navegador no soporta geolocalización.
+    </div>
+
+    <!-- Carga inicial -->
+    <div id="cargando" class="loading-overlay" style="display:inline;">
+        <strong data-i18n="grabar.cargando">Activando GPS y cargando mapa…</strong>
+        <div class="skeleton-bar"><div id="progreso"></div></div>
+        <button class="btn btn--ghost" style="margin-top:var(--sp-4);" onclick="saltarEspera()">
+            <span data-i18n="grabar.saltar">Continuar sin esperar precisión</span>
+        </button>
+    </div>
+
+    <!-- Bottom sheet de detalles -->
+    <aside class="details-sheet" id="detailsSheet" aria-label="Detalles">
+        <button class="details-sheet__close" id="btn-close-details" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="details-sheet__handle-wrap" id="details-handle-wrap" aria-label="Arrastra o pulsa para cerrar">
+            <div class="details-sheet__handle"></div>
+        </div>
+        <h2 style="font-size:var(--fs-lg);margin:0 0 var(--sp-4);" data-i18n="grabar.detalles">Detalles</h2>
+
+        <div class="section-block">
+            <h3 data-i18n="ruta.velocidad">Velocidad</h3>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat__value text-num"><span id="velmaxmm">0</span></div><div class="stat__label"><span id="uniVelmaxMm">m/m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="velmaxkh">0</span></div><div class="stat__label"><span data-i18n="grabar.velmax">Vel. máx</span> <span id="uniVelmaxKh">km/h</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="velminmm">0</span></div><div class="stat__label"><span id="uniVelminMm">m/m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="velminkh">0</span></div><div class="stat__label"><span data-i18n="grabar.velmed">Vel. media</span> <span id="uniVelminKh">km/h</span></div></div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h3 data-i18n="grabar.tiempos">Tiempos</h3>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat__value text-num"><span id="marcha">00:00:00</span></div><div class="stat__label" data-i18n="ruta.marcha">marcha</div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="descanso">00:00:00</span></div><div class="stat__label" data-i18n="ruta.descanso">descanso</div></div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h3 data-i18n="grabar.altitud">Altitud</h3>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat__value text-num"><span id="txtAlturaMin">0</span></div><div class="stat__label"><span data-i18n="ruta.altBase">alt. base</span> <span id="uniAltMin">m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="txtAlturaMax">0</span></div><div class="stat__label"><span data-i18n="ruta.altPico">alt. pico</span> <span id="uniAltMax">m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="desnivelSup">0</span></div><div class="stat__label">desnivel sup. <span id="uniDesSup">m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="desnivelInf">0</span></div><div class="stat__label">desnivel inf. <span id="uniDesInf">m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="ascenso">0</span></div><div class="stat__label"><span data-i18n="ruta.ascenso">ascenso</span> <span id="unidadAsc">m</span></div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="descenso">0</span></div><div class="stat__label"><span data-i18n="ruta.descenso">descenso</span> <span id="unidadDes">m</span></div></div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h3 data-i18n="grabar.pendientes">Pendientes</h3>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat__value text-num"><span id="pendienteAsc">0</span>%</div><div class="stat__label">asc. máx <span id="txtGradAsc">0</span>°</div></div>
+                <div class="stat"><div class="stat__value text-num"><span id="pendienteDes">0</span>%</div><div class="stat__label">desc. máx <span id="txtGradDes">0</span>°</div></div>
+            </div>
+            <!-- Visualización de inclinación oculta (legacy, sin uso visual) -->
+            <div id="pendGradAsc" class="legacy-shadow"></div>
+            <div id="pendGradDes" class="legacy-shadow"></div>
+        </div>
+
+        <div class="section-block">
+            <h3 data-i18n="grabar.tipoRuta">Tipo de ruta</h3>
+            <p><strong id="categoria">Desconocida</strong> · <span class="muted" data-i18n="grabar.dificultad">Dificultad</span>: <strong id="dificultad">—</strong></p>
+            <div id="imgCategoria"></div>
+        </div>
+
+        <div class="section-block">
+            <a href="#" id="link-analisis" class="btn btn--ghost btn--full">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span data-i18n="grabar.verAnalisis">Ver análisis energético</span>
+            </a>
+        </div>
+
+        <div class="section-block">
+            <h3 data-i18n="grabar.fotos">Fotos</h3>
+            <div id="fotos"></div>
+        </div>
+
+        <p class="muted text-xs mt-4"><span data-i18n="grabar.fallos">Lecturas imprecisas</span>: <span id="fallos">0</span></p>
+    </aside>
+
+    <!-- Wrap del chart de elevación + velocidad (oculto hasta primer punto) -->
+    <div id="mychart-wrap" aria-hidden="true">
+        <div id="mychart"></div>
+    </div>
+
+    <!-- Fila secundaria: post-it, lupa, detalles, línea, gráfico -->
+    <div class="secondary-bar">
+        <button class="mini-btn" id="btn-nota" onclick="crearNota()" aria-label="Nota">
+            <!-- post-it -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 8v8a3 3 0 0 1-3 3H8l-5 -5V5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v3z"/>
+                <path d="M3 14h5v5"/>
+            </svg>
+        </button>
+        <button class="mini-btn" id="btn-amplio" onclick="toggleAmplio()" aria-label="Ampliar/reducir zoom">
+            <!-- lupa -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+        </button>
+        <button class="pill-btn" id="btn-details" aria-label="Detalles">
+            <span data-i18n="grabar.detalles">Detalles</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="mini-btn" id="btn-linea" onclick="abrirSelectorLinea(event)" aria-label="Tipo de línea">
+            <!-- línea simple -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 17 9 11 13 15 21 7"/>
+            </svg>
+        </button>
+        <button class="mini-btn" id="btn-graph" onclick="abrirSelectorGraph(event)" aria-label="Tipo de gráfica">
+            <!-- gráfico sencillo (barras) -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Popovers para los selectores ocultos (cambioLinea / cambioGraph) -->
+    <div id="popover-linea" class="popover-select" role="menu">
+        <button type="button" data-value="distancia">Distancia</button>
+        <button type="button" data-value="altura">Altura</button>
+        <button type="button" data-value="velocidad">Velocidad</button>
+    </div>
+    <div id="popover-graph" class="popover-select" role="menu">
+        <button type="button" data-value="altura">Altura</button>
+        <button type="button" data-value="velocidad">Velocidad</button>
+        <button type="button" data-value="altvel">Altura + Velocidad</button>
+    </div>
+
+    <!-- Action bar inferior -->
+    <div class="action-bar" id="botones">
+        <button class="iconbtn" id="btFoto" onclick="verFoto()" aria-label="Foto">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+
+        <button class="btn-grabar" id="boton" data-state="idle" onclick="inicio()">
+            <span id="btn-grabar-label" data-i18n="grabar.empezar">Empezar</span>
+        </button>
+
+        <button class="iconbtn" id="configuracion" onclick="herramientas()" aria-label="Configurar">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+    </div>
+
+    <!-- ============ Sheets modales ============ -->
+
+    <!-- Sheet: Guardar ruta -->
+    <section class="modal-sheet" id="sheet-guardar" aria-label="Guardar ruta">
+        <header class="modal-sheet__head">
+            <button class="iconbtn" onclick="cerrarSheet('sheet-guardar')" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h2 data-i18n="grabar.guardar.titulo">Guardar ruta</h2>
+        </header>
+        <div class="modal-sheet__body" id="guardar">
+            <div class="stack gap-3">
+                <label class="stack gap-1">
+                    <span class="text-sm soft" data-i18n="grabar.guardar.nombre">Nombre</span>
+                    <input id="nombre" type="text" maxlength="255" value="Ruta">
+                </label>
+                <label class="stack gap-1">
+                    <span class="text-sm soft" data-i18n="grabar.guardar.tipo">Tipo de ruta</span>
+                    <input id="tipo" type="text" readonly maxlength="255" value="Recorrida por el usuario">
+                </label>
+                <label class="stack gap-1">
+                    <span class="text-sm soft" data-i18n="grabar.guardar.descripcion">Descripción</span>
+                    <textarea id="descripcion" rows="6" placeholder="Cuenta cómo fue la ruta…"></textarea>
+                </label>
+
+                <div class="switch-row">
+                    <div>
+                        <div class="switch-row__label" data-i18n="grabar.guardar.privada">Ruta privada</div>
+                        <div class="switch-row__hint" data-i18n="grabar.guardar.privadaHint">Sólo visible para ti y tus invitados.</div>
+                    </div>
+                    <div class="switch">
+                        <input type="checkbox" onchange="privatizar()" id="privado" class="toggle">
+                        <label for="privado" class="slider"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-sheet__footer">
+            <button id="btCancelar" class="btn btn--ghost" onclick="cancelar()" data-i18n="boton.cancelar">Cancelar</button>
+            <button id="btGuardar" class="btn" onclick="guardar()" data-i18n="boton.guardar">Guardar</button>
+        </div>
+    </section>
+
+    <!-- Sheet: Configuración -->
+    <section class="modal-sheet" id="sheet-config" aria-label="Configuración">
+        <header class="modal-sheet__head">
+            <button class="iconbtn" onclick="cerrarSheet('sheet-config')" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h2 data-i18n="grabar.config.titulo">Configuración</h2>
+        </header>
+        <div class="modal-sheet__body" id="funciones">
+            <div class="switch-row">
+                <div><div class="switch-row__label" data-i18n="grabar.config.full">Pantalla completa</div></div>
+                <div class="switch"><input type="checkbox" onchange="maximiza()" id="maxi" class="toggle"><label for="maxi" class="slider"></label></div>
+            </div>
+            <div class="switch-row">
+                <div>
+                    <div class="switch-row__label" data-i18n="grabar.config.compartir">Compartir la ruta</div>
+                    <div class="switch-row__hint" id="publicacion" style="display:none;">
+                        <span data-i18n="grabar.config.urlPubli">URL de publicación:</span>
+                        <input id="urlPubli" type="text" readonly value="" style="margin-top:var(--sp-2);">
+                        <button id="btCopia" type="button" class="btn btn--ghost" style="min-height:40px;margin-top:var(--sp-2);" onclick="copiarpp()">Copiar</button>
+                    </div>
+                </div>
+                <div class="switch"><input type="checkbox" onchange="comparte()" id="compartir" class="toggle"><label for="compartir" class="slider"></label></div>
+            </div>
+            <div class="switch-row">
+                <div><div class="switch-row__label" data-i18n="grabar.config.imperial">Sistema imperial</div></div>
+                <div class="switch"><input type="checkbox" onchange="sistema()" id="sistem" class="toggle"><label for="sistem" class="slider"></label></div>
+            </div>
+            <div class="switch-row">
+                <div><div class="switch-row__label" data-i18n="grabar.config.alarmaGPS">Alarma pérdida GPS</div></div>
+                <div class="switch"><input type="checkbox" checked onchange="alGPS()" id="gps" class="toggle"><label for="gps" class="slider"></label></div>
+            </div>
+            <div class="switch-row">
+                <div>
+                    <div class="switch-row__label" data-i18n="grabar.config.bolsillo">Modo bolsillo</div>
+                    <div class="switch-row__hint" data-i18n="grabar.config.bolsilloHint">Pantalla negra para llevar el móvil sin desbloquearlo accidentalmente.</div>
+                </div>
+                <div class="switch"><input type="checkbox" onchange="bolsillo()" id="btBolsillo" class="toggle"><label for="btBolsillo" class="slider"></label></div>
+            </div>
+        </div>
+        <div class="modal-sheet__footer">
+            <button id="btCfunc" class="btn btn--ghost btn--full" onclick="herramientas()" data-i18n="boton.cerrar">Cerrar</button>
+        </div>
+    </section>
+
+    <!-- Pantalla bolsillo -->
+    <div id="bolsillo" style="position:fixed;inset:0;background:#000;display:none;z-index:1000001000;color:#fff;padding:var(--sp-5);overflow-y:auto;">
+        <div id="bodrio">
+            <h1 data-i18n="grabar.bolsillo.titulo">Modo Bolsillo</h1>
+            <p data-i18n="grabar.bolsillo.texto">
+                El modo bolsillo apaga la pantalla sin suspender el teléfono, para que puedas llevarlo en el bolsillo sin parar la grabación. Desliza desde el borde izquierdo para volver.
+            </p>
+            <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5);">
+                <button class="btn btn--full" onclick="document.getElementById('bodrio').style.display='none';" data-i18n="grabar.bolsillo.ok">Entendido</button>
+                <button class="btn btn--ghost btn--full" onclick="document.getElementById('bolsillo').style.display='none';salirPantallaCompleta();" data-i18n="boton.cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de cámara -->
+    <div id="divFoto" style="position:fixed;inset:0;background:#000;display:none;z-index:1000000050;">
+        <canvas id="canvas" width="1280" height="720" style="display:none;"></canvas>
+        <video id="video" style="position:fixed;inset:0;width:100%;height:100%;z-index:1000000001;"></video>
+        <button class="cam-close" onclick="verFoto()" aria-label="Cerrar cámara">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div id="tomarFoto"></div>
+        <div id="comentarFoto" style="position:fixed;right:var(--sp-3);bottom:calc(var(--safe-bottom) + var(--sp-3));left:var(--sp-3);display:none;z-index:1000000002;">
+            <input id="comentarioFoto" type="text" placeholder="Comentario" style="background:#fff;color:#000;">
+            <button class="btn btn--full" style="margin-top:var(--sp-2);" onclick="publicaFoto()" data-i18n="grabar.foto.publicar">Publicar foto</button>
+        </div>
+    </div>
+
+    <!-- Chat embebido (oculto hasta compartir) -->
+    <div id="chat-area" style="position:fixed;top:calc(var(--header-h) + var(--safe-top) + 130px);left:var(--sp-3);width:30px;height:30px;background:var(--c-glass);backdrop-filter:blur(12px);border-radius:var(--r-md);overflow:hidden;display:none;z-index:1000000012;border:1px solid var(--c-border);">
+        <img id="imgChat" onclick="chatea()" src="https://itinere.pro/usuario.png" style="width:30px;height:30px;cursor:pointer;">
+        <span id="nombreChat" style="margin:10px;color:var(--c-primary);font-size:var(--fs-lg);font-weight:bold;"></span>
+        <iframe id="chat" src="" style="width:100%;height:50%;border:none;"></iframe>
+    </div>
+
+    <!-- Canvas y audio ocultos requeridos por el JS -->
+    <canvas id="micanvas" width="512" height="512" style="display:none;"></canvas>
+    <audio id="alerta" src="https://itinere.pro/alerta.mp3" style="display:none;"></audio>
+
+    <!-- =================================================================
+         LEGACY SHADOW: IDs que el JS de funciones.js requiere para
+         escribir en la tabla de energía + huella CO2. Se mueven a la
+         vista /analisis.html; aquí quedan ocultos para no romper el JS.
+         ================================================================= -->
+    <div class="legacy-shadow" aria-hidden="true">
+        <input id="peso" type="range" min="0" max="1000" step="10" value="100">
+        <select id="uniPeso"><option id="op1" value="kg">Kg</option><option id="op2" value="ton">Ton</option></select>
+        <div id="100kg"></div><div id="1ton"></div><div id="10ton"></div>
+        <span id="calorias">0</span><span id="calorias1">0</span><span id="calorias10">0</span>
+        <span id="musculo">0</span><span id="musculo1">0</span><span id="musculo10">0</span>
+        <span id="potencia">0</span><span id="potencia1">0</span><span id="potencia10">0</span>
+        <span id="regeneracion">0</span><span id="regeneracion1">0</span><span id="regeneracion10">0</span>
+        <span id="gasolina">0</span><span id="gasolina1">0</span><span id="gasolina10">0</span>
+        <span id="huellagasolina">0</span><span id="huellagasolina1">0</span><span id="huellagasolina10">0</span>
+        <span id="gasoil">0</span><span id="gasoil1">0</span><span id="gasoil10">0</span>
+        <span id="huellagasoil">0</span><span id="huellagasoil1">0</span><span id="huellagasoil10">0</span>
+        <span id="glp">0</span><span id="glp1">0</span><span id="glp10">0</span>
+        <span id="huellaglp">0</span><span id="huellaglp1">0</span><span id="huellaglp10">0</span>
+        <span id="etanol">0</span><span id="etanol1">0</span><span id="etanol10">0</span>
+        <span id="huellaetanol">0</span><span id="huellaetanol1">0</span><span id="huellaetanol10">0</span>
+        <span id="hidrogeno">0</span><span id="hidrogeno1">0</span><span id="hidrogeno10">0</span>
+        <span id="txtgasolina"></span><span id="txthuellagasolina"></span>
+        <span id="txtgasoil"></span><span id="txthuellagasoil"></span>
+        <span id="txtglp"></span><span id="txthuellaglp"></span>
+        <span id="txtetanol"></span><span id="txthuellaetanol"></span>
+        <span id="txthidrogeno"></span>
+        <select id="graph"><option value="altura">Altura</option><option value="velocidad">Velocidad</option><option value="altvel">Altvel</option></select>
+        <select id="linea"><option value="distancia">Distancia</option><option value="altura">Altura</option><option value="velocidad">Velocidad</option></select>
+        <div id="velmax"></div><div id="velmin"></div>
+        <div id="desnivel">0</div><div id="unidadNiv">m</div>
+        <div id="home"></div><div id="datos"></div><div id="controles"></div>
+        <div id="amplia"></div><div id="imgamplia"></div>
+        <div id="divmap1"></div><div id="divmap2"></div><div id="divmap3"></div>
+        <input id="id_sliderBlend" type="range" min="0" max="1" step="0.1" value="0.5">
+        <div id="id_valBlend"></div><div id="id_valBlend2"></div>
+    </div>
+
+<!-- ============ SCRIPT INLINE LEGACY (sin cambios, sólo wrappers UX) ============ -->
+<script>
+// === Wrappers UI nuevos ===
+const sheetDetails = document.getElementById('detailsSheet');
+const btnDetails   = document.getElementById('btn-details');
+btnDetails.addEventListener('click', () => sheetDetails.classList.toggle('is-open'));
+document.getElementById('btn-close-details').addEventListener('click', () => sheetDetails.classList.remove('is-open'));
+document.getElementById('details-handle-wrap').addEventListener('click', () => sheetDetails.classList.toggle('is-open'));
+document.getElementById('btn-config').addEventListener('click', () => abrirSheet('sheet-config'));
+function abrirSheet(id)  { document.getElementById(id).classList.add('is-open'); }
+function cerrarSheet(id) { document.getElementById(id).classList.remove('is-open'); }
+
+// Link a /analisis.html con datos vivos
+document.getElementById('link-analisis').addEventListener('click', e => {
+    e.preventDefault();
+    const d   = (window.totalDistancia || 0);
+    const asc = (window.ascenso || 0);
+    const t   = (window.segundos || 0);
+    window.open(`/analisis.html?d=${d}&asc=${asc}&t=${t}`, '_self');
+});
+
+// El JS legacy llama a `herramientas()` para abrir/cerrar la config.
+// Lo redirigimos al sheet moderno.
+function herramientas() {
+    const s = document.getElementById('sheet-config');
+    s.classList.toggle('is-open');
+}
+
+// Cambia el estado visual del botón Grabar/Parar
+function actualizarBotonGrabar(rec) {
+    const btn = document.getElementById('boton');
+    const lbl = document.getElementById('btn-grabar-label');
+    if (rec) {
+        btn.dataset.state = 'rec';
+        lbl.textContent = (window.Itinere?.t('grabar.parar')) || 'Parar';
+    } else {
+        btn.dataset.state = 'idle';
+        lbl.textContent = (window.Itinere?.t('grabar.empezar')) || 'Empezar';
+    }
+}
+// Observador: cuando `graba` cambia en el JS legacy, actualizamos el botón
+setInterval(() => actualizarBotonGrabar(window.graba === true), 500);
+
+// === Botón de emergencia: si el GPS tarda demasiado en ser preciso,
+//     el usuario puede saltarse el filtro y continuar con la lectura actual ===
+function saltarEspera() {
+    window.precis = 999;          // acepta cualquier precisión
+    window.multiplo = 5;           // marca la barra al 100% en la próxima lectura
+    document.getElementById('progreso').style.width = '100%';
+}
+
+// === Wrapper de `inicio()` legacy: el original usaba `.value` de un input.
+//     Como ahora `#boton` es <button>, manejamos el estado vía data-state. ===
+window.inicio = function () {
+    const btn = document.getElementById('boton');
+    const lbl = document.getElementById('btn-grabar-label');
+    if (btn.dataset.state !== 'rec') {
+        // EMPEZAR
+        try { requestWakelock(); } catch (e) {}
+        window.graba = true;
+        geo();
+        btn.dataset.state = 'rec';
+        lbl.textContent = (window.Itinere?.t('grabar.parar')) || 'Parar';
+        window.crono = setInterval(secundero, 1000);
+        // Mostrar el wrap del chart con dimensiones reales antes de que
+        // Google Charts pinte; si no, el SVG se renderizaría con tamaño 0.
+        const _wrap = document.getElementById('mychart-wrap');
+        if (_wrap) _wrap.style.display = 'block';
+        Toast.show('Grabando…', { duration: 1500 });
+    } else {
+        // PARAR — abre el sheet de Guardar
+        try { releaseWakelock(); } catch (e) {}
+        window.graba = false;
+        clearInterval(window.crono);
+        btn.dataset.state = 'idle';
+        lbl.textContent = (window.Itinere?.t('grabar.empezar')) || 'Empezar';
+        document.getElementById('sheet-guardar').classList.add('is-open');
+    }
+};
+
+// =============== SCRIPT LEGACY ORIGINAL ===============
+geo();
+function leerTokens() {
+    fetch('https://itinere.pro/tokens/'+id)
+        .then(response => {
+        // Opcional: verificar si la respuesta fue exitosa
+        if (!response.ok) {
+            throw new Error("Error en la red");
+        }
+        return response.json(); // Convierte la respuesta a JSON
+        })
+       .then(data => {
+             document.getElementById('tipo-tokens').innerHTML = data.label;
+             document.getElementById('tokens').innerHTML = data.tokens; // El objeto JSON ya parseado
+       })
+      .catch(error => {
+           console.error("Error al obtener el archivo JSON:", error);
+     });   
+}
+function success(pos) {
+    crd = pos.coords;
+    precision = pos.coords.accuracy;
+
+    // Indicador GPS dinámico
+    const chip = document.getElementById('gpsChip');
+    if (precision <= 10)      chip.setAttribute('status', 'ok');
+    else if (precision <= 30) chip.setAttribute('status', 'weak');
+    else                      chip.setAttribute('status', 'none');
+
+    if (parseFloat(precision) > precis && malas < 5) { malas++; return; }
+    if (malas >= 5) {
+        fallos++;
+        document.getElementById('fallos').innerHTML = fallos;
+        malas = 1; precis = precis + 10; return;
+    } else { precis = 10; }
+    malas = 1;
+    if (contador == 0 && multiplo < 5) {
+        multiplo++;
+        document.getElementById('progreso').style.width = (multiplo * 20) + '%';
+        return;
+    }
+    latitud  = crd.latitude;
+    longitud = crd.longitude;
+    if (contador > 0) {
+        distancia = calcularDistanciaEnMetros(ultimaPosicion[0], ultimaPosicion[1], parseFloat(latitud), parseFloat(longitud));
+        try { distancia = parseFloat(distancia); } catch { return; }
+        if (distancia < 1) {
+            parada = true;
+            document.getElementById('velocidad').innerHTML = '0';
+            return;
+        } else { parada = false; }
+    }
+    if (graba == false) {
+        navigator.geolocation.clearWatch(grabando);
+        if (contador > 0) return;
+    }
+    if (contador == 0) {
+        latInicio = latitud; lonInicio = longitud;
+        latcentroImagen = latitud; loncentroImagen = longitud;
+        poligono.push([latitud, longitud]);
+        mapa_nuevo();
+    } else {
+        difSegundos = segundos - ultimoSegundo;
+        if (difSegundos <= 0) difSegundos = 1;
+        velocidad = (distancia / 1000) * (3600 / difSegundos);
+        velocidadms = velocidad / 3.6;
+        if (!isFinite(velocidad) || velocidad < 0) return;
+        if (totalDistancia > 0) {
+            vMedia = segundos > 0 ? (totalDistancia / 1000) * (3600 / segundos) : 0;
+            if (!isFinite(vMedia)) return;
+            velmin = vMedia;
+            if (velocidad > velmax) velmax = velocidad;
+        }
+    }
+    if (document.getElementById('cargando').style.display != 'none') {
+        document.getElementById('cargando').style.display = 'none';
+    }
+
+    var lat = latitud, lng = longitud;
+    var dtImage = getPixelCoordinates(lng, lat, 14);
+    var { tileX, tileY, pixelXInTile, pixelYInTile } = dtImage;
+    xtile = tileX; ytile = tileY;
+    var lastxPixel = pixelXInTile, lastyPixel = pixelYInTile;
+    if (xtile != xviejo || ytile != yviejo) {
+        latcentroImagen = lat; loncentroImagen = lng;
+        xviejo = xtile; yviejo = ytile;
+        var image = new Image();
+        image.crossOrigin = 'Anonymous';
+        image.src = 'https://itinere.pro/'+id+'/mapbox/v4/mapbox.terrain-rgb/14/' + parseInt(xtile) + '/' + parseInt(ytile) + '@2x.pngraw?access_token=';
+        image.onload = function () {
+            var canvas = document.getElementById('micanvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = image.width; canvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+            extraePixel(dtImage.pixelXInTile, dtImage.pixelYInTile);
+        };
+        image.onerror = function () { return; };
+    } else {
+        var diflat = calcularDistanciaEnMetros(latcentroImagen, loncentroImagen, parseFloat(latitud), parseFloat(loncentroImagen));
+        var pixeleslat = latcentroImagen > latitud ? lastyPixel + (diflat / 5.4) : lastyPixel - (diflat / 5.4);
+        var diflon = calcularDistanciaEnMetros(latcentroImagen, loncentroImagen, parseFloat(latcentroImagen), parseFloat(longitud));
+        var pixeleslon = loncentroImagen > longitud ? lastxPixel - (diflon / 5.4) : lastxPixel + (diflon / 5.4);
+        extraePixel(parseInt(pixeleslon), parseInt(pixeleslat));
+    }
+    leerTokens();
+}
+
+function getPixelCoordinates(longitude, latitude, zoom, tileSize = 512) {
+    const x = (longitude + 180) / 360;
+    const y = 0.5 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / (2 * Math.PI);
+    const pixelX = x * tileSize * Math.pow(2, zoom);
+    const pixelY = y * tileSize * Math.pow(2, zoom);
+    const tileX = Math.floor(pixelX / tileSize);
+    const tileY = Math.floor(pixelY / tileSize);
+    return { tileX, tileY, pixelXInTile: pixelX - tileX * tileSize, pixelYInTile: pixelY - tileY * tileSize };
+}
+
+function extraePixel(x, y) {
+    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+    var r = pixelData[0], g = pixelData[1], b = pixelData[2];
+    if (r == 0) { r = 1; } if (g == 0) { g = 1; } if (b == 0) { b = 1; }
+    const elevation = -10000 + ((r * 256 * 256) + (g * 256) + b) * 0.1;
+    if (isNaN(elevation) || elevation < -2000 || elevation > 9000) return;
+
+    if (altitud == 0) { alturaMin = elevation; alturaMax = elevation; }
+    else {
+        if (elevation > altitud && (elevation - altitud) > distancia) elevation = altitud + ((elevation - altitud) / 10);
+        else if (elevation < altitud && (altitud - elevation) > distancia) elevation = altitud - ((altitud - elevation) / 10);
+        if (elevation < parseFloat(alturaMin)) alturaMin = elevation;
+        if (elevation > parseFloat(alturaMax)) alturaMax = elevation;
+    }
+    if (elevation > parseFloat(altitud) && contador > 0) {
+        ascenso = parseFloat(ascenso) + parseFloat(distancia);
+        difAltura = elevation - parseFloat(altitud);
+        if (parseFloat(difAltura) > 0 && parseFloat(distancia) > 0) {
+            pendienteAsc = parseInt((parseFloat(difAltura) / parseFloat(distancia)) * 100);
+            if (pendienteAsc > maxPendienteAsc) { maxPendienteAsc = pendienteAsc; maxiAsc = true; }
+        }
+        if (parseFloat(pendienteAsc) > 0) {
+            numGradAsc = Math.atan(pendienteAsc / 100);
+            if (parseFloat(numGradAsc) > 0) {
+                numGradDes = parseInt(numGradAsc * (180 / Math.PI));
+                document.getElementById('gradosnow').innerHTML = numGradDes;
+                document.getElementById('ptBrujula').style.transform = 'rotate(' + numGradDes + 'deg)';
+                document.getElementById('brujula').style.transform = 'rotate(-' + (numGradDes * 2) + 'deg)';
+                document.getElementById('antibrujula').style.transform = 'rotate(' + numGradDes + 'deg)';
+            }
+        }
+    }
+    if (elevation < parseFloat(altitud) && contador > 0) {
+        descenso = parseFloat(descenso) + parseFloat(distancia);
+        difAltura = parseFloat(altitud) - elevation;
+        if (parseFloat(difAltura) > 0 && parseFloat(distancia) > 0) {
+            pendienteDes = parseInt((parseFloat(difAltura) / parseFloat(distancia)) * 100);
+            if (pendienteDes > maxPendienteDes) { maxPendienteDes = pendienteDes; maxiDes = true; }
+            numGradDes = Math.atan(pendienteDes / 100);
+            if (parseFloat(numGradDes) > 0) {
+                numGradAsc = parseInt(parseFloat(numGradDes) * (180 / Math.PI));
+                rotAsc = 360 - numGradAsc;
+                document.getElementById('gradosnow').innerHTML = numGradAsc;
+                document.getElementById('ptBrujula').style.transform = 'rotate(-' + numGradAsc + 'deg)';
+                document.getElementById('brujula').style.transform = 'rotate(' + (numGradAsc * 2) + 'deg)';
+                document.getElementById('antibrujula').style.transform = 'rotate(-' + numGradAsc + 'deg)';
+            }
+        }
+    }
+    altitud = elevation;
+    if (contador == 0) alturaBase = altitud;
+
+    totalDistancia = parseFloat(totalDistancia) + parseFloat(distancia);
+    geoson.push(['[' + parseFloat(longitud), parseFloat(latitud), parseFloat(altitud), parseFloat(velocidad) + ']']);
+    if (compartido == true) {
+        ejecutarFuncionIframe('muevete', '${pos}' + longitud + '|' + latitud + '|' + altitud + '|' + velocidad);
+    }
+    if (geoson.length >= 1000) { guardarChunkLocal(geoson); geoson = []; coordenadas = []; poligono = []; }
+
+    google.charts.load('current', { 'packages': ['corechart'] });
+    google.charts.setOnLoadCallback(dibujarGrafica);
+
+    poligono.push([latitud, longitud]);
+    coordenadas.push(poligono[poligono.length - 1]);
+    degradado = crearDegradado('#DBC207', '#F06700', coordenadas.length);
+    if (contador == 0) {
+        marker[contador] = L.marker([latitud, longitud], { icon: marcainicio }).addTo(mymap);
+    } else {
+        marker[contador] = L.marker([parseFloat(latitud), parseFloat(longitud)], { icon: marcador }).addTo(mymap);
+        if (contador > 1) mymap.removeLayer(marker[contador - 1]);
+        if (contador < 2) {
+            poly = L.polyline([poligono], { color: '#ff0000', weight: 10, opacity: .5 }).addTo(mymap);
+            polyline = L.polyline([poligono], { color: '#DBC207', weight: 6, opacity: 0.8 }).addTo(mymap);
+        } else {
+            poly.remove();
+            poly = L.polyline([poligono], { color: '#ff0000', weight: 10, opacity: .5 }).addTo(mymap);
+            cambioLinea();
+        }
+        if (contador <= 2 || !amplio) mymap.fitBounds(polyline.getBounds().pad(0.25));
+        else ponBounds();
+    }
+    ultimaPosicion[0] = latitud; ultimaPosicion[1] = longitud;
+    contador++;
+    actualizarPanelDashboard();
+    ultimoSegundo = segundos;
+}
+
+// Eventos de gesto y wakelock
+let startX, startY;
+document.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; });
+document.addEventListener('touchend', e => {
+    const diffX = e.changedTouches[0].clientX - startX;
+    const diffY = e.changedTouches[0].clientY - startY;
+    if (Math.abs(diffX) > Math.abs(diffY) && diffX > 0) {
+        if (document.getElementById('bolsillo').style.display == 'inline') {
+            document.getElementById('bolsillo').style.display = 'none';
+            document.getElementById('maxi').checked = false;
+            document.getElementById('btBolsillo').checked = false;
+            salirPantallaCompleta();
+        }
+    }
+});
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && document.getElementById('bolsillo').style.display == 'inline') {
+        document.getElementById('bolsillo').style.display = 'none';
+    }
+});
+
+async function requestWakelock() {
+    try {
+        if ('wakeLock' in navigator) {
+            await navigator.wakeLock.request('screen');
+        }
+    } catch (e) { console.log(e); }
+}
+
+// Confirmación al salir si hay cambios
+let cambiosPendientes = false;
+document.getElementById('boton').addEventListener('click', () => {
+    cambiosPendientes = true;
+    window.addEventListener('beforeunload', confirmarSalida);
+});
+function confirmarSalida(e) {
+    if (cambiosPendientes) {
+        const m = '¿Estás seguro de que quieres salir? Los cambios no se guardarán.';
+        e.preventDefault(); e.returnValue = m; return m;
+    }
+}
+document.getElementById('btGuardar').addEventListener('click', () => {
+    cambiosPendientes = false;
+    window.removeEventListener('beforeunload', confirmarSalida);
+});
+
+// Cámara: tomar foto.
+// Importante: paramos el stream a través de `video.srcObject` y NO de la
+// variable global `stream` de funciones.js (no siempre está sincronizada
+// con el MediaStream activo). El watchPosition del GPS no se toca aquí.
+document.getElementById('tomarFoto').addEventListener('click', () => {
+    const vid = document.getElementById('video');
+    const cnv = document.getElementById('canvas');
+    const cx  = cnv.getContext('2d');
+    vid.pause();
+    cnv.width = vid.videoWidth; cnv.height = vid.videoHeight;
+    cx.drawImage(vid, 0, 0, cnv.width, cnv.height);
+    if (vid.srcObject && typeof vid.srcObject.getTracks === 'function') {
+        vid.srcObject.getTracks().forEach(t => t.stop());
+    }
+    document.getElementById('tomarFoto').style.display = 'none';
+    document.getElementById('comentarFoto').style.display = 'inline';
+});
+function publicaFoto() {
+    video.srcObject = null;
+    document.getElementById('comentarFoto').style.display = 'none';
+    document.getElementById('tomarFoto').style.display = 'inline-block';
+    document.getElementById('divFoto').style.display = 'none';
+    var fotos = document.getElementById('fotos');
+    fotos.innerHTML += `<div style="margin-top:var(--sp-3);text-align:center;color:var(--c-ink);">
+        <img id="foto_${fotosTomadas}" style="max-width:100%;border-radius:var(--r-md);border:1px solid var(--c-border);">
+        <p class="text-sm soft" style="margin-top:var(--sp-1);">${document.getElementById('comentarioFoto').value}</p>
+    </div>`;
+    var imgData = canvas.toDataURL('image/png', 0.6);
+    document.getElementById('foto_' + fotosTomadas).src = imgData;
+    markerF[fotosTomadas] = L.marker([latitud, longitud], { icon: marcado }).addTo(mymap);
+    markerF[fotosTomadas].bindPopup(`<img src="${imgData}" style="height:100px;">${document.getElementById('comentarioFoto').value}`);
+    arrFotos.push(longitud, latitud, document.getElementById('comentarioFoto').value);
+    var img = imgData.replace(/^data:image\/\w+;base64,/, '');
+    var byteCharacters = atob(img);
+    var byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+    var blob = new Blob([new Uint8Array(byteNumbers)], { type: 'image/png' });
+    // El backend (php-compat.js) en modo dir=temp exige que nFoto comience
+    // con `${user_id}_`. Antes se usaba idUnico (UUID) y siempre devolvía 403.
+    fetch(base + 'foto.php?idRuta=' + idUnico + '&nFoto=' + id + '_' + fotosTomadas + '&dir=temp', {
+        method: 'POST', body: blob, credentials: 'include',
+    }).then(r => r.text()).then(() => fotosTomadas++);
+}
+
+function comparte() {
+    if (compartido == false) {
+        compartido = true;
+        if (document.getElementById('imgChat').src == 'https://itinere.pro/usuario.png') {
+            document.getElementById('imgChat').src = 'https://itinere.pro/usuarios/' + id + '/' + id + '.png';
+        }
+        document.getElementById('chat').src = 'https://itinere.pro:2083?/' + id + '/' + id;
+        document.getElementById('chat-area').style.display = 'inline';
+        document.getElementById('urlPubli').value = 'https://itinere.pro/go/' + id;
+        document.getElementById('publicacion').style.display = 'block';
+    } else {
+        compartido = false;
+        document.getElementById('chat').src = '';
+        document.getElementById('chat-area').style.display = 'none';
+        document.getElementById('urlPubli').value = '';
+        document.getElementById('publicacion').style.display = 'none';
+    }
+}
+
+function singeo() {
+    document.getElementById('errorGeo').style.display = 'none';
+    document.getElementById('cargando').style.display = 'none';
+}
+
+function chatea() {
+    const a = document.getElementById('chat-area');
+    if (a.style.height == '30px') {
+        a.style.height = '50%'; a.style.width = 'calc(100% - 40px)'; a.style.overflow = 'auto';
+    } else {
+        a.style.height = '30px'; a.style.width = '30px'; a.style.overflow = 'hidden';
+    }
+}
+
+window.addEventListener('message', e => {
+    if (e.origin !== 'https://itinere.pro:2083') return;
+    if (e.data?.tipo === 'ejecutarFuncion' && e.data.datos === 'mensaje') {
+        if (document.getElementById('chat-area').style.height == '30px') chatea();
+    }
+});
+
+const iframeChat = document.getElementById('chat');
+function ejecutarFuncionIframe(nombre, args) {
+    iframeChat.contentWindow?.postMessage({ type: 'EJECUTAR_FUNCION', funcion: nombre, args }, 'https://itinere.pro:2083');
+}
+
+function copiarpp() {
+    const t = document.getElementById('urlPubli').value;
+    if (!t) return;
+    navigator.clipboard.writeText(t).then(() => {
+        document.getElementById('btCopia').textContent = '¡Copiado!';
+        setTimeout(() => document.getElementById('btCopia').textContent = 'Copiar', 1000);
+    });
+}
+
+async function obtenerUsuario(usuario) {
+    try {
+        const r = await fetch('https://itinere.pro/infoUsuario.php?id=' + usuario);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        if (j.status === 'success') {
+            j.data.forEach(d => document.getElementById('nombreChat').innerHTML = d.nombre);
+        }
+    } catch (e) { console.log(e); }
+}
+
+
+// ============================================================
+//  Notas (post-it): texto geolocalizado, igual flujo que las fotos
+// ============================================================
+var arrNotas = window.arrNotas || (window.arrNotas = []);
+var markerN  = window.markerN  || (window.markerN  = []);
+var notasTomadas = 0;
+const iconoNota = L.divIcon({
+    className: 'nota-icon',
+    html: '<div style="background:#FFD54F;border:1px solid #C46A00;border-radius:4px 4px 12px 4px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.3);">📝</div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+});
+function crearNota() {
+    if (typeof latitud === 'undefined' || typeof longitud === 'undefined' || latitud == null) {
+        Toast.error('Sin posición GPS todavía.');
+        return;
+    }
+    const texto = window.prompt('Escribe la nota:');
+    if (!texto || !texto.trim()) return;
+    const t = texto.trim();
+    const n = notasTomadas;
+    markerN[n] = L.marker([latitud, longitud], { icon: iconoNota }).addTo(mymap);
+    markerN[n].bindPopup(`<div style="max-width:200px;white-space:pre-wrap;">${t.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>`);
+    arrNotas.push({ lon: longitud, lat: latitud, texto: t });
+    // Render en el sheet de detalles (sección Fotos: reaprovechamos hueco)
+    const fotos = document.getElementById('fotos');
+    if (fotos) {
+        const safe = t.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+        fotos.insertAdjacentHTML('beforeend',
+            `<div style="margin-top:var(--sp-3);padding:var(--sp-3);background:#FFF6D9;border-left:3px solid #C46A00;border-radius:var(--r-sm);"><strong>📝</strong> <span class="text-sm">${safe}</span></div>`
+        );
+    }
+    notasTomadas++;
+    Toast.show('Nota guardada', { duration: 1200 });
+}
+
+// ============================================================
+//  Botón lupa: toggle de la variable global `amplio` + re-bound
+// ============================================================
+function toggleAmplio() {
+    window.amplio = !window.amplio;
+    document.getElementById('btn-amplio').dataset.state = window.amplio ? 'on' : 'off';
+    try {
+        if (window.polyline && typeof polyline.getBounds === 'function' && contador > 1) {
+            mymap.fitBounds(polyline.getBounds().pad(window.amplio ? 0.05 : 0.25));
+        }
+        if (typeof ponBounds === 'function') ponBounds();
+    } catch (e) {}
+}
+
+// ============================================================
+//  Selectores línea / gráfico: popovers que delegan en los
+//  <select id="linea"> / <select id="graph"> ocultos del legacy
+// ============================================================
+function _abrirPopover(idPopover, btnEl) {
+    document.querySelectorAll('.popover-select').forEach(p => p.classList.remove('is-open'));
+    const pop = document.getElementById(idPopover);
+    if (!pop) return;
+    const rect = btnEl.getBoundingClientRect();
+    pop.style.left = Math.max(8, Math.min(window.innerWidth - 168, rect.left + rect.width / 2 - 80)) + 'px';
+    pop.classList.add('is-open');
+}
+function abrirSelectorLinea(ev) { ev?.stopPropagation?.(); _abrirPopover('popover-linea', ev.currentTarget); }
+function abrirSelectorGraph(ev) { ev?.stopPropagation?.(); _abrirPopover('popover-graph', ev.currentTarget); }
+
+document.querySelectorAll('#popover-linea button').forEach(b => {
+    b.addEventListener('click', () => {
+        const sel = document.getElementById('linea');
+        if (sel) { sel.value = b.dataset.value; try { cambioLinea(); } catch (e) {} }
+        document.querySelectorAll('#popover-linea button').forEach(x =>
+            x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+        document.getElementById('popover-linea').classList.remove('is-open');
+    });
+});
+document.querySelectorAll('#popover-graph button').forEach(b => {
+    b.addEventListener('click', () => {
+        const sel = document.getElementById('graph');
+        if (sel) { sel.value = b.dataset.value; try { cambioGraph(); } catch (e) {} }
+        document.querySelectorAll('#popover-graph button').forEach(x =>
+            x.setAttribute('aria-selected', x === b ? 'true' : 'false'));
+        document.getElementById('popover-graph').classList.remove('is-open');
+    });
+});
+// Click fuera = cerrar
+document.addEventListener('click', e => {
+    if (e.target.closest('.popover-select') || e.target.closest('#btn-linea') || e.target.closest('#btn-graph')) return;
+    document.querySelectorAll('.popover-select').forEach(p => p.classList.remove('is-open'));
+});
+</script>
+</body>
+</html>

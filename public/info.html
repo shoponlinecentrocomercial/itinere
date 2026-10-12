@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!-- Google tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-E6ZHW8EGB9"></script> <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-E6ZHW8EGB9'); </script>
+<script>
+var base = "https://itinere.pro/";
+var urlParams = location.href;
+var id = parseInt(urlParams.substring(urlParams.lastIndexOf("/") + 1, urlParams.length));
+var ruta = urlParams.substring(urlParams.lastIndexOf("/info/") + 6, urlParams.lastIndexOf("/" + id));
+document.write('<title>Itinere — Ruta ' + id + '</title>');
+
+var idUs = 0;
+fetch('/read-cookie', { credentials: 'include' })
+    .then(r => r.json())
+    .then(d => { if (d.logueado) idUs = d.id; });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="theme-color" content="#FFF8F0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#14172A" media="(prefers-color-scheme: dark)">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://itinere.pro; connect-src 'self' https://itinere.pro; script-src 'self' 'unsafe-inline' https://itinere.pro https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://itinere.pro https://www.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https://itinere.pro;">
+
+    <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+
+    <link rel="stylesheet" href="https://itinere.pro/css/tokens.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/base.css">
+    <link rel="stylesheet" href="https://itinere.pro/css/components.css">
+
+    <script src="https://itinere.pro/js/i18n.js" defer></script>
+    <script src="https://itinere.pro/js/components.js" defer></script>
+
+    <style>
+        body { background: var(--c-canvas); }
+
+        .hero {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            background: var(--c-surface-2);
+            overflow: hidden;
+        }
+        .hero img { width: 100%; height: 100%; object-fit: cover; }
+        .hero__overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,.0) 30%, rgba(0,0,0,.7) 100%);
+        }
+        .hero__text {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: var(--sp-5);
+            color: #fff;
+        }
+        .hero__title {
+            font-family: var(--font-display);
+            font-size: var(--fs-xl);
+            font-weight: var(--fw-black);
+            margin: 0 0 var(--sp-2);
+            line-height: var(--lh-tight);
+            text-shadow: 0 2px 8px rgba(0,0,0,.5);
+        }
+        .hero__meta { display: flex; gap: var(--sp-3); flex-wrap: wrap; font-size: var(--fs-sm); opacity: .9; }
+
+        .author {
+            display: flex; align-items: center; gap: var(--sp-3);
+            padding: var(--sp-3) var(--sp-4);
+            background: var(--c-surface);
+            border-bottom: 1px solid var(--c-border);
+        }
+        .author img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .author__name { font-weight: var(--fw-bold); color: var(--c-ink); }
+        .author__date { font-size: var(--fs-sm); color: var(--c-ink-muted); }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--c-border);
+            border-bottom: 1px solid var(--c-border);
+        }
+        .stats-bar__item {
+            background: var(--c-surface);
+            text-align: center;
+            padding: var(--sp-4);
+        }
+        .stats-bar__value {
+            font-family: var(--font-display);
+            font-size: var(--fs-lg);
+            font-weight: var(--fw-black);
+            color: var(--c-ink);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+        .stats-bar__label {
+            font-size: var(--fs-xs);
+            color: var(--c-ink-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-top: 4px;
+        }
+
+        details.accordion {
+            border-bottom: 1px solid var(--c-border);
+            background: var(--c-surface);
+        }
+        details.accordion summary {
+            padding: var(--sp-4);
+            font-weight: var(--fw-bold);
+            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            list-style: none;
+            color: var(--c-ink);
+        }
+        details.accordion summary::-webkit-details-marker { display: none; }
+        details.accordion summary::after {
+            content: '+'; font-size: var(--fs-xl); color: var(--c-ink-muted);
+            transition: transform var(--t-quick);
+        }
+        details.accordion[open] summary::after { content: '−'; }
+        details.accordion__body { padding: 0 var(--sp-4) var(--sp-4); }
+
+        .accordion-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: var(--sp-2);
+        }
+        .accordion-grid > div {
+            padding: var(--sp-2) var(--sp-3);
+            background: var(--c-surface-2);
+            border-radius: var(--r-sm);
+            font-size: var(--fs-sm);
+        }
+        .accordion-grid strong { display: block; font-family: var(--font-display); font-size: var(--fs-md); color: var(--c-ink); }
+
+        .fotos-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: var(--sp-2); margin-top: var(--sp-3);
+        }
+        .fotos-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); }
+
+        .cta-sticky {
+            position: sticky; bottom: 0;
+            padding: var(--sp-4) var(--sp-4) calc(var(--safe-bottom) + var(--sp-4));
+            background: var(--c-canvas);
+            border-top: 1px solid var(--c-border);
+            display: grid; grid-template-columns: 1fr auto auto; gap: var(--sp-2);
+            z-index: var(--z-sticky);
+        }
+
+        .legacy-shadow { position: absolute; left: -9999px; visibility: hidden; }
+    </style>
+</head>
+<body>
+
+    <header class="appbar">
+        <a href="javascript:history.back()" class="iconbtn" aria-label="Atrás">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <span class="appbar__logo">
+            <img src="/img/logo.svg" width="28" height="28" alt="">
+            <span id="nombre">Ruta</span>
+        </span>
+        <span class="appbar__spacer"></span>
+        <button class="iconbtn" id="btn-compartir" aria-label="Compartir">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+    </header>
+
+    <!-- Hero -->
+    <div class="hero">
+        <img id="mapa" src="" alt="">
+        <div class="hero__overlay"></div>
+        <div class="hero__text">
+            <h1 class="hero__title"><span id="hero-nombre">Cargando…</span></h1>
+            <div class="hero__meta">
+                <span><strong id="tipo">—</strong></span>
+                <span><span data-i18n="info.dificultadLabel">Dificultad</span>: <strong id="dificultad">—</strong></span>
+                <span id="privado-badge"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Autor + fecha -->
+    <div class="author">
+        <img id="imgUs" src="https://itinere.pro/usuario.png" alt="">
+        <div style="flex:1;">
+            <div class="author__name" id="usuario">—</div>
+            <div class="author__date"><span data-i18n="info.publicado">Publicado</span> <span id="fecha"></span></div>
+        </div>
+    </div>
+
+    <!-- Stats principales -->
+    <div class="stats-bar">
+        <div class="stats-bar__item">
+            <div class="stats-bar__value"><span id="distancia">0</span><span class="muted text-sm">m</span></div>
+            <div class="stats-bar__label" data-i18n="ruta.distancia">Distancia</div>
+        </div>
+        <div class="stats-bar__item">
+            <div class="stats-bar__value"><span id="desnivel">0</span><span class="muted text-sm">m</span></div>
+            <div class="stats-bar__label" data-i18n="ruta.desnivel">Desnivel</div>
+        </div>
+        <div class="stats-bar__item">
+            <div class="stats-bar__value"><span id="marcha">--:--:--</span></div>
+            <div class="stats-bar__label" data-i18n="ruta.tiempo">Tiempo</div>
+        </div>
+    </div>
+
+    <!-- Acordeones -->
+    <details class="accordion" open>
+        <summary data-i18n="info.descripcionLabel">Descripción</summary>
+        <div class="accordion__body" id="descripcion-wrap">
+            <p id="descripcion" class="soft" style="margin:0;"></p>
+            <p class="text-sm muted mt-4">
+                <span data-i18n="grabar.tipoRuta">Tipo de ruta</span>:
+                <strong id="categoria">—</strong>
+            </p>
+        </div>
+    </details>
+
+    <details class="accordion">
+        <summary data-i18n="ruta.velocidad">Velocidad</summary>
+        <div class="accordion__body">
+            <div class="accordion-grid">
+                <div><strong><span id="velmaxkh">0</span> km/h</strong><span class="muted">máx (<span id="velmaxmm">0</span> m/m)</span></div>
+                <div><strong><span id="velminkh">0</span> km/h</strong><span class="muted">media (<span id="velminmm">0</span> m/m)</span></div>
+            </div>
+        </div>
+    </details>
+
+    <details class="accordion">
+        <summary data-i18n="grabar.altitud">Altitud y desnivel</summary>
+        <div class="accordion__body">
+            <div class="accordion-grid">
+                <div><strong><span id="base">0</span> m</strong><span class="muted" data-i18n="ruta.altBase">alt. base</span></div>
+                <div><strong><span id="pico">0</span> m</strong><span class="muted" data-i18n="ruta.altPico">alt. pico</span></div>
+                <div><strong><span id="superior">0</span> m</strong><span class="muted">desnivel sup.</span></div>
+                <div><strong><span id="inferior">0</span> m</strong><span class="muted">desnivel inf.</span></div>
+                <div><strong><span id="ascenso">0</span> m</strong><span class="muted" data-i18n="ruta.ascenso">ascenso</span></div>
+                <div><strong><span id="descenso">0</span> m</strong><span class="muted" data-i18n="ruta.descenso">descenso</span></div>
+            </div>
+        </div>
+    </details>
+
+    <details class="accordion">
+        <summary data-i18n="grabar.pendientes">Pendientes</summary>
+        <div class="accordion__body">
+            <div class="accordion-grid">
+                <div><strong><span id="porcAsc">0</span>%</strong><span class="muted">asc. máx <span id="gradAsc">0</span>°</span></div>
+                <div><strong><span id="porcDes">0</span>%</strong><span class="muted">desc. máx <span id="gradDes">0</span>°</span></div>
+            </div>
+        </div>
+    </details>
+
+    <details class="accordion">
+        <summary><span data-i18n="info.tiempos">Tiempos</span></summary>
+        <div class="accordion__body">
+            <div class="accordion-grid">
+                <div><strong><span id="descanso">--:--:--</span></strong><span class="muted" data-i18n="ruta.descanso">descanso</span></div>
+                <div><strong><span id="latitud">—</span></strong><span class="muted">latitud</span></div>
+                <div><strong><span id="longitud">—</span></strong><span class="muted">longitud</span></div>
+            </div>
+        </div>
+    </details>
+
+    <details class="accordion" id="fotosAccordion" style="display:none;">
+        <summary><span data-i18n="grabar.fotos">Fotos</span></summary>
+        <div class="accordion__body">
+            <div id="fotos" class="fotos-grid"></div>
+        </div>
+    </details>
+
+    <div style="padding: var(--sp-5) var(--sp-4);">
+        <p class="muted text-sm" data-i18n="info.energiaHint">
+            ¿Quieres saber la huella energética y de CO₂ de esta ruta?
+        </p>
+        <a id="link-analisis" href="#" class="btn btn--ghost btn--full">
+            <span data-i18n="grabar.verAnalisis">Ver análisis energético</span>
+        </a>
+    </div>
+
+    <div style="height:120px;"></div>
+
+    <!-- CTA sticky abajo -->
+    <div class="cta-sticky">
+        <button class="btn" onclick="recorrer()">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span data-i18n="info.recorrer">Recorrer la ruta</span>
+        </button>
+        <a class="iconbtn" id="btn-gpx" href="#" aria-label="Descargar GPX">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </a>
+        <a class="iconbtn" href="javascript:navigator.share?.({title:document.title,url:location.href})" aria-label="Compartir">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </a>
+    </div>
+
+    <!-- Legacy shadow IDs (tabla energía y otros que el JS usa) -->
+    <div class="legacy-shadow" aria-hidden="true">
+        <div id="privado"></div>
+        <input id="peso" type="range" min="0" max="1000" step="10" value="100">
+        <select id="uniPeso"><option id="op1" value="kg">Kg</option><option id="op2" value="ton">Ton</option></select>
+        <div id="100kg"></div><div id="1ton"></div><div id="10ton"></div>
+        <span id="calorias">0</span><span id="calorias1">0</span><span id="calorias10">0</span>
+        <span id="musculo">0</span><span id="musculo1">0</span><span id="musculo10">0</span>
+        <span id="potencia">0</span><span id="potencia1">0</span><span id="potencia10">0</span>
+        <span id="regeneracion">0</span><span id="regeneracion1">0</span><span id="regeneracion10">0</span>
+        <span id="gasolina">0</span><span id="gasolina1">0</span><span id="gasolina10">0</span>
+        <span id="huellagasolina">0</span><span id="huellagasolina1">0</span><span id="huellagasolina10">0</span>
+        <span id="gasoil">0</span><span id="gasoil1">0</span><span id="gasoil10">0</span>
+        <span id="huellagasoil">0</span><span id="huellagasoil1">0</span><span id="huellagasoil10">0</span>
+        <span id="glp">0</span><span id="glp1">0</span><span id="glp10">0</span>
+        <span id="huellaglp">0</span><span id="huellaglp1">0</span><span id="huellaglp10">0</span>
+        <span id="etanol">0</span><span id="etanol1">0</span><span id="etanol10">0</span>
+        <span id="huellaetanol">0</span><span id="huellaetanol1">0</span><span id="huellaetanol10">0</span>
+        <span id="hidrogeno">0</span><span id="hidrogeno1">0</span><span id="hidrogeno10">0</span>
+        <div id="txtgasolina"></div><div id="txthuellagasolina"></div>
+        <div id="txtgasoil"></div><div id="txthuellagasoil"></div>
+        <div id="txtglp"></div><div id="txthuellaglp"></div>
+        <div id="txtetanol"></div><div id="txthuellaetanol"></div>
+        <div id="txthidrogeno"></div>
+        <div id="imgCategoria"></div>
+        <div id="pendGradAsc"></div><div id="pendGradDes"></div>
+        <div id="uniAltMin"></div><div id="uniAltMax"></div>
+        <div id="uniDesSup"></div><div id="uniDesInf"></div>
+        <div id="unidadAsc"></div><div id="unidadDes"></div>
+        <div id="uniVelmaxMm"></div><div id="uniVelmaxKh"></div>
+        <div id="uniVelminMm"></div><div id="uniVelminKh"></div>
+    </div>
+
+<script>
+var latitud, longitud, distancia, fotos = 0;
+var gasolina = 34780000, gasolinagl = 131656621.84752;
+var gasoil = 35860000,   gasoilgl   = 135744866.57424;
+var glp = 24000000,      glpgl      = 90849882.816;
+var etanol = 22500000,   etanolgl   = 85171765.14;
+var hidrogeno = 4600000, hidrogenogl = 17412894.2064;
+var totalDistancia = 0, velocidadms = 0;
+var ascenso = 0, descenso = 0, desnivelSup = 0, desnivelInf = 0;
+var segundos = 0, tiempo, peso = 100;
+
+document.getElementById('btn-compartir').addEventListener('click', () => {
+    if (navigator.share) navigator.share({ title: document.title, url: location.href });
+    else navigator.clipboard?.writeText(location.href).then(() => Toast.show('Enlace copiado'));
+});
+
+async function obtenerUsuario(usuario) {
+    try {
+        const r = await fetch('https://itinere.pro/infoUsuario.php?id=' + usuario);
+        if (!r.ok) return;
+        const j = await r.json();
+        if (j.status === 'success') {
+            j.data.forEach(d => document.getElementById('usuario').textContent = d.nombre);
+        }
+    } catch (e) { console.log(e); }
+}
+
+function cargarImagenUsuario(usuario) {
+    const url = 'https://itinere.pro/usuarios/' + usuario + '/' + usuario + '.png';
+    fetch(url, { method: 'HEAD' }).then(r => { if (r.ok) document.getElementById('imgUs').src = url; }).catch(() => {});
+}
+
+async function obtenerDatos() {
+    try {
+        const r = await fetch('https://itinere.pro/info.php?id=' + id);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        if (j.status !== 'success') { Toast.error('No se pudo cargar la ruta'); return; }
+        j.data.forEach(dato => {
+            document.getElementById('mapa').src = base + 'rutas/' + id + '/ruta_' + id + '.png';
+            tiempo = String(dato.tiempo).split(':');
+            segundos = 0;
+            for (var a = 0; a < tiempo.length; a++) {
+                if (a == 0 && parseInt(tiempo[a]) != 0) segundos = parseInt(tiempo[a]) * 3600;
+                else if (a == 1 && parseInt(tiempo[a]) != 0) segundos += parseInt(tiempo[a]) * 60;
+                else segundos += parseInt(tiempo[a]) || 0;
+            }
+            document.getElementById('fecha').textContent  = dato.fecha;
+            document.getElementById('nombre').textContent = dato.nombre;
+            document.getElementById('hero-nombre').textContent = dato.nombre;
+            document.title = 'Itinere — ' + dato.nombre;
+            cargarImagenUsuario(dato.usuario);
+            document.getElementById('categoria').textContent  = dato.categoria;
+            document.getElementById('dificultad').textContent = dato.dificultad;
+            document.getElementById('tipo').textContent       = dato.tipo;
+            document.getElementById('descripcion').textContent = dato.descripcion;
+            document.getElementById('marcha').textContent     = dato.tiempo;
+            document.getElementById('descanso').textContent   = dato.descanso;
+            document.getElementById('distancia').textContent  = dato.distancia;
+            distancia = parseFloat(dato.distancia); totalDistancia = distancia;
+            document.getElementById('velmaxkh').textContent = dato.velmaxima;
+            document.getElementById('velmaxmm').textContent = (dato.velmaxima * 16.6667).toFixed(2);
+            document.getElementById('velminkh').textContent = dato.velmedia;
+            document.getElementById('velminmm').textContent = (dato.velmedia * 16.6667).toFixed(2);
+            velocidadms = (dato.velmedia * 1000) / 3600;
+            document.getElementById('base').textContent     = dato.base;
+            document.getElementById('pico').textContent     = dato.pico;
+            document.getElementById('desnivel').textContent = (dato.pico - dato.base).toFixed(2);
+            document.getElementById('superior').textContent = dato.superior; desnivelSup = dato.superior;
+            document.getElementById('inferior').textContent = dato.inferior; desnivelInf = dato.inferior;
+            document.getElementById('ascenso').textContent  = dato.ascenso;  ascenso = dato.ascenso;
+            document.getElementById('descenso').textContent = dato.descenso; descenso = dato.descenso;
+            document.getElementById('porcAsc').textContent  = parseInt(dato.porcAsc);
+            document.getElementById('porcDes').textContent  = parseInt(dato.porcDes);
+            document.getElementById('gradAsc').textContent  = parseInt(dato.gradAsc);
+            document.getElementById('gradDes').textContent  = parseInt(dato.gradDes);
+            document.getElementById('latitud').textContent  = dato.latitud; latitud = dato.latitud;
+            document.getElementById('longitud').textContent = dato.longitud; longitud = dato.longitud;
+            fotos = dato.fotos;
+            if (parseInt(dato.privado) === 1) {
+                document.getElementById('privado-badge').innerHTML = `<span class="chip" style="background:rgba(0,0,0,.4);color:#fff;">🔒 Privada</span>`;
+            }
+            if (fotos > 0) {
+                document.getElementById('fotosAccordion').style.display = 'block';
+                cargarFotos(parseInt(fotos));
+            }
+            obtenerUsuario(dato.usuario);
+            actualizarLinkAnalisis();
+        });
+    } catch (e) {
+        Toast.error('Error cargando datos');
+        console.error(e);
+    }
+}
+
+function cargarFotos(n) {
+    const cont = document.getElementById('fotos');
+    cont.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+        const img = document.createElement('img');
+        img.src = `https://itinere.pro/rutas/${id}/foto_${i}.png`;
+        img.alt = '';
+        img.loading = 'lazy';
+        cont.appendChild(img);
+    }
+}
+
+function actualizarLinkAnalisis() {
+    document.getElementById('link-analisis').href = `/analisis.html?d=${totalDistancia}&asc=${ascenso}&t=${segundos}`;
+    document.getElementById('btn-gpx').href = `https://itinere.pro/rutas/${id}/ruta_${id}.gpx`;
+    document.getElementById('btn-gpx').setAttribute('download', `ruta_${id}.gpx`);
+}
+
+function recorrer() {
+    location.href = 'https://itinere.pro/ruta.html?pag=ruta/' + ruta + '/' + id + '/' + latitud + '/' + longitud + '/' + distancia;
+}
+
+obtenerDatos();
+</script>
+</body>
+</html>

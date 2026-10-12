@@ -1,0 +1,28 @@
+{
+    "name": "Itinere",
+    "short_name": "Itinere",
+    "description": "Plataforma de grabación, planificación y compartición de rutas.",
+    "start_url": "/index.html",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#FFF8F0",
+    "background_color": "#FFF8F0",
+    "icons": [
+        { "src": "/img/logo.svg",                          "sizes": "any",     "type": "image/svg+xml" },
+        { "src": "/img/generated/icon-72.png",             "sizes": "72x72",   "type": "image/png" },
+        { "src": "/img/generated/icon-96.png",             "sizes": "96x96",   "type": "image/png" },
+        { "src": "/img/generated/icon-128.png",            "sizes": "128x128", "type": "image/png" },
+        { "src": "/img/generated/icon-144.png",            "sizes": "144x144", "type": "image/png" },
+        { "src": "/img/generated/icon-152.png",            "sizes": "152x152", "type": "image/png" },
+        { "src": "/img/generated/icon-192.png",            "sizes": "192x192", "type": "image/png" },
+        { "src": "/img/generated/icon-256.png",            "sizes": "256x256", "type": "image/png" },
+        { "src": "/img/generated/icon-384.png",            "sizes": "384x384", "type": "image/png" },
+        { "src": "/img/generated/icon-512.png",            "sizes": "512x512", "type": "image/png" },
+        { "src": "/img/generated/maskable-512.png",        "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+        { "src": "/img/generated/mono-96.png",             "sizes": "96x96",   "type": "image/png", "purpose": "monochrome" }
+    ],
+    "categories": ["health", "navigation", "lifestyle", "sports"],
+    "lang": "es",
+    "dir": "ltr"
+}
