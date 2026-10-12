@@ -1,7 +1,7 @@
 {
-  "name": "Stellar Compass",
-  "short_name": "Compass",
-  "description": "Compass with solar, lunar, planetary, stellar and constellation reference",
+  "name": "Itinere",
+  "short_name": "Itinere",
+  "description": "Rutes App",
   "start_url": "/index.html",
   "display": "standalone",
   "theme_color": "#1a3c2c",
