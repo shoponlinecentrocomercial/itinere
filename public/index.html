@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Itinere</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 420px;
+      width: calc(100% - 24px);
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    }
+    #status {
+      font-size: 14px;
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+    button {
+      background: #22c55e;
+      color: #06270f;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Itinere</h2>
+    <div id="status">Inicializando GPS…</div>
+    <button id="trackBtn">Activar seguimiento</button>
+  </div>
 
+  <script type="module">
+    import { Geolocation } from '@capacitor/geolocation';
+
+    const statusEl = document.getElementById('status');
+    const trackBtn = document.getElementById('trackBtn');
+
+    async function requestLocationPermission() {
+      const permission = await Geolocation.requestPermissions();
+      return permission.location === 'granted';
+    }
+
+    function sendLocation(coords) {
+      fetch('https://itinere.pro:8443/actualizar-ubicacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          altitude: coords.altitude,
+          speed: coords.speed,
+          timestamp: Date.now()
+        })
+      }).then(() => {
+        statusEl.textContent = `GPS OK: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+      }).catch(err => {
+        statusEl.textContent = 'Error enviando ubicación al backend';
+        console.error(err);
+      });
+    }
+
+    async function startTracking() {
+      statusEl.textContent = 'Solicitando permisos de ubicación…';
+
+      const allowed = await requestLocationPermission();
+      if (!allowed) {
+        statusEl.textContent = 'Permiso de ubicación denegado';
+        return;
+      }
+
+      statusEl.textContent = 'GPS activo. Esperando coordenadas…';
+
+      Geolocation.watchPosition(
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        },
+        (position) => {
+          if (!position || !position.coords) return;
+          sendLocation(position.coords);
+        },
+        (error) => {
+          statusEl.textContent = 'Error de geolocalización';
+          console.error(error);
+        }
+      );
+    }
+
+    trackBtn.addEventListener('click', startTracking);
+  </script>
+</body>
+</html>
