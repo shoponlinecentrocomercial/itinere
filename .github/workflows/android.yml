@@ -33,19 +33,20 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      # ⬇️ ESTE PASO ES NUEVO: VERIFICA QUÉ VERSIÓN DE AGP HAY
       - name: Inspect generated build.gradle
         run: |
-          echo "=== build.gradle generado ==="
+          echo "=== Contenido de android/build.gradle ==="
           cat android/build.gradle
           echo "=== Buscando versión de AGP ==="
-          grep -r "com.android.tools.build:gradle" android/ || echo "NO ENCONTRADO"
+          grep "com.android.tools.build:gradle" android/build.gradle || echo "NO ENCONTRADO"
 
-      # ⬇️ ESTE PASO ES CRÍTICO: actualizar AGP a 8.3.0
-      - name: Update AGP to 8.3.0
+      # ⬇️ ESTE PASO ES NUEVO: FUERZA AGP 8.3.0
+      - name: Force AGP 8.3.0
         run: |
           cd android
-          sed -i "s/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/" build.gradle
-          echo "=== build.gradle DESPUÉS del cambio ==="
+          sed -i "s/com.android.tools.build:gradle:.*/com.android.tools.build:gradle:8.3.0/" build.gradle
+          echo "=== Después de modificar: ==="
           grep "com.android.tools.build:gradle" build.gradle
 
       - name: Sync Capacitor
