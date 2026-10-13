@@ -65,6 +65,9 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: '8.1.1'
+          
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build APK
         run: |
