@@ -27,21 +27,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Elimina la carpeta android que tengas en el repo (puede tener rutas rotas)
       - name: Remove existing Android platform
         run: rm -rf android
 
-      # Genera el proyecto Android desde cero
       - name: Add Android platform
         run: npx cap add android
-      - name: Force AGP 8.3.0
+
+      # ⬇️ La clave: modificar el AGP generado después de cap add
+      - name: Update AGP to 8.3.0
         run: |
           cd android
           sed -i "s/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/" build.gradle
-          echo "--- Contenido de build.gradle tras el parche ---"
-          head -20 build.gradle
+          echo "--- build.gradle después de la modificación ---"
+          grep "com.android.tools.build:gradle" build.gradle
 
-      # Sincroniza los assets web y los plugins
       - name: Sync Capacitor
         run: npx cap sync android
 
