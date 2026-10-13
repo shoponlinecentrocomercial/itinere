@@ -40,11 +40,11 @@ jobs:
           echo "=== Buscando versión de AGP ==="
           grep "com.android.tools.build:gradle" android/build.gradle || echo "NO ENCONTRADO"
 
-      # ⬇️ SED CORREGIDO: solo sustituye el número de versión, no toda la línea
-      - name: Force AGP 8.3.0
+      # ⬇️ AHORA SUBIMOS A 8.9.1
+      - name: Force AGP 8.9.1
         run: |
           cd android
-          sed -i "s|com.android.tools.build:gradle:[0-9.]*|com.android.tools.build:gradle:8.3.0|" build.gradle
+          sed -i "s|com.android.tools.build:gradle:[0-9.]*|com.android.tools.build:gradle:8.9.1|" build.gradle
           echo "=== Después de modificar: ==="
           grep "com.android.tools.build:gradle" build.gradle
 
