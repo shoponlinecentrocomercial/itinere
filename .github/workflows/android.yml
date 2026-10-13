@@ -47,6 +47,21 @@ jobs:
           echo "=== Después de modificar: ==="
           grep "com.android.tools.build:gradle" build.gradle
 
+      - name: Enable WebView debugging
+        run: |
+          # Busca el MainActivity.java generado por Capacitor
+          MAIN_ACTIVITY=$(find android/app/src/main/java -name "MainActivity.java")
+          echo "Parcheando: $MAIN_ACTIVITY"
+    
+          # Inserta la llamada de depuración justo después de super.onCreate()
+          sed -i 's|super.onCreate(savedInstanceState);|super.onCreate(savedInstanceState);\n        if (BuildConfig.DEBUG) { WebView.setWebContentsDebuggingEnabled(true); }|' "$MAIN_ACTIVITY"
+    
+          # Añade los imports necesarios si no están
+          sed -i 's|^import com.getcapacitor.BridgeActivity;|import com.getcapacitor.BridgeActivity;\nimport android.webkit.WebView;|' "$MAIN_ACTIVITY"
+    
+          echo "=== MainActivity.java modificado ==="
+          cat "$MAIN_ACTIVITY"
+
       - name: Sync Capacitor
         run: npx cap sync android
 
