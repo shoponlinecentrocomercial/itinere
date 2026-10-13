@@ -1,4 +1,5 @@
 name: Build Android APK
+
 on:
   push:
     branches: [ main ]
@@ -7,58 +8,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # O la versión que uses
+          node-version: '20'
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # O la versión que uses
+          java-version: '21'
 
       - name: Install dependencies
-        run: npm ci # O npm install
+        run: npm ci # o npm install si no tienes package-lock.json
 
-      # ESTE ES EL PASO CLAVE QUE FALTA
+      # ESTO ES LO QUE TE FALTA O ESTÁ MAL ORDENADO
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # Ahora sí, construye el APK
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       - name: Build APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Find APK
-        id: find_apk
-        run: |
-          set -e
-          APK_FILE=$(find android/app/build/outputs/apk -type f -name "*release*.apk" | head -n 1 || true)
-          if [ -z "$APK_FILE" ]; then
-            echo "No APK found"
-            exit 1
-          fi
-          echo "apk_dir=$(dirname "$APK_FILE")" >> $GITHUB_OUTPUT
-
-      - name: Sign APK
-        id: sign_app
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: ${{ steps.find_apk.outputs.apk_dir }}
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: ${{ secrets.KEYSTORE_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          ./gradlew assembleDebug # Usa 'assembleDebug' para probar primero
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: itinere-apk
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
