@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '22'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -25,21 +25,19 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci # o npm install si no tienes package-lock.json
+        run: npm install
 
-      # ESTO ES LO QUE TE FALTA O ESTÁ MAL ORDENADO
+      # Elimina la carpeta android que tengas en el repo (puede tener rutas rotas)
+      - name: Remove existing Android platform
+        run: rm -rf android
+
+      # Genera el proyecto Android desde cero
+      - name: Add Android platform
+        run: npx cap add android
+
+      # Sincroniza los assets web y los plugins
       - name: Sync Capacitor
         run: npx cap sync android
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: 8.1.1
-
-      - name: Generate Gradle Wrapper
-        run: |
-          cd android
-          gradle wrapper --gradle-version 8.1.1
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
