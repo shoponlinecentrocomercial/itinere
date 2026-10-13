@@ -33,6 +33,13 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Inspect generated build.gradle
+        run: |
+          echo "=== build.gradle generado ==="
+          cat android/build.gradle
+          echo "=== Buscando versión de AGP ==="
+          grep -r "com.android.tools.build:gradle" android/ || echo "NO ENCONTRADO"
+
       # ⬇️ ESTE PASO ES CRÍTICO: actualizar AGP a 8.3.0
       - name: Update AGP to 8.3.0
         run: |
