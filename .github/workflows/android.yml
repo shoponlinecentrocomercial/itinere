@@ -34,6 +34,12 @@ jobs:
       # Genera el proyecto Android desde cero
       - name: Add Android platform
         run: npx cap add android
+      - name: Force AGP 8.3.0
+        run: |
+          cd android
+          sed -i "s/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/" build.gradle
+          echo "--- Contenido de build.gradle tras el parche ---"
+          head -20 build.gradle
 
       # Sincroniza los assets web y los plugins
       - name: Sync Capacitor
