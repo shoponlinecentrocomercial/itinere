@@ -33,12 +33,12 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      # ⬇️ La clave: modificar el AGP generado después de cap add
-      - name: Update AGP to 8.2.1
+      # ⬇️ ESTE PASO ES CRÍTICO: actualizar AGP a 8.3.0
+      - name: Update AGP to 8.3.0
         run: |
           cd android
-          sed -i "s/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.2.1/" build.gradle
-          echo "--- build.gradle después de la modificación ---"
+          sed -i "s/com.android.tools.build:gradle:8.1.1/com.android.tools.build:gradle:8.3.0/" build.gradle
+          echo "=== build.gradle DESPUÉS del cambio ==="
           grep "com.android.tools.build:gradle" build.gradle
 
       - name: Sync Capacitor
@@ -47,12 +47,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.2.1
+          gradle-version: 8.4
 
       - name: Generate Gradle Wrapper
         run: |
           cd android
-          gradle wrapper --gradle-version 8.2.1
+          gradle wrapper --gradle-version 8.4
 
       - name: Build APK
         run: |
