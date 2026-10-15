@@ -83,19 +83,13 @@ jobs:
         run: |
           cd android
           cat > signing.gradle << 'EOF'
-          def keystoreProperties = new Properties()
-          keystoreProperties['storeFile'] = 'itinere-release.jks'
-          keystoreProperties['storePassword'] = System.getenv('KEYSTORE_PASSWORD')
-          keystoreProperties['keyAlias'] = System.getenv('KEY_ALIAS')
-          keystoreProperties['keyPassword'] = System.getenv('KEY_PASSWORD')
-
           android {
               signingConfigs {
                   release {
                       storeFile file("app/itinere-release.jks")
-                      storePassword RELEASE_STORE_PASSWORD
-                      keyAlias RELEASE_KEY_ALIAS
-                      keyPassword RELEASE_KEY_PASSWORD
+                      storePassword project.findProperty('RELEASE_STORE_PASSWORD') ?: ''
+                      keyAlias project.findProperty('RELEASE_KEY_ALIAS') ?: ''
+                      keyPassword project.findProperty('RELEASE_KEY_PASSWORD') ?: ''
                   }
               }
               buildTypes {
@@ -105,7 +99,6 @@ jobs:
               }
           }
           EOF
-          echo "=== signing.gradle ==="
           cat signing.gradle
 
       - name: Apply signing config to app/build.gradle
@@ -133,13 +126,12 @@ jobs:
           gradle wrapper --gradle-version 8.11.1
 
       - name: Build Release APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease \
+            -PRELEASE_STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -PRELEASE_KEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -PRELEASE_KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
