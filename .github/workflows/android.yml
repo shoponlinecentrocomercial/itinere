@@ -71,26 +71,41 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/itinere-release.jks
           ls -la android/app/itinere-release.jks
 
-# ⬇️ Escribir credenciales en gradle.properties (forma que Gradle respeta)
-      - name: Write signing properties
+      - name: Create signing config file
         run: |
           cd android
-          echo "RELEASE_STORE_FILE=itinere-release.jks" >> gradle.properties
-          echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
-          echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> gradle.properties
-          echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+          cat > signing.gradle << 'EOF'
+          def keystoreProperties = new Properties()
+          keystoreProperties['storeFile'] = 'itinere-release.jks'
+          keystoreProperties['storePassword'] = System.getenv('KEYSTORE_PASSWORD')
+          keystoreProperties['keyAlias'] = System.getenv('KEY_ALIAS')
+          keystoreProperties['keyPassword'] = System.getenv('KEY_PASSWORD')
 
-      - name: Configure Release Signing
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("app/${keystoreProperties['storeFile']}")
+                      storePassword keystoreProperties['storePassword']
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+          echo "=== signing.gradle ==="
+          cat signing.gradle
+
+      - name: Apply signing config to app/build.gradle
         run: |
           cd android/app
-
-          # 1) Insertar el bloque signingConfigs justo después de "android {"
-          sed -i 's|^android {|android {\n    signingConfigs {\n        release {\n            storeFile file(RELEASE_STORE_FILE)\n            storePassword RELEASE_STORE_PASSWORD\n            keyAlias RELEASE_KEY_ALIAS\n            keyPassword RELEASE_KEY_PASSWORD\n        }\n    }|' build.gradle
-
-          # 2) Insertar signingConfig dentro del bloque release de buildTypes
-          sed -i 's|release {|release {\n            signingConfig signingConfigs.release|' build.gradle
-
-          echo "=== build.gradle después del parcheo ==="
+          echo "" >> build.gradle
+          echo "apply from: '../signing.gradle'" >> build.gradle
+          echo "=== app/build.gradle final ==="
           cat build.gradle
       
       - name: Install assets
