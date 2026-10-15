@@ -86,7 +86,7 @@ jobs:
           android {
               signingConfigs {
                   release {
-                      storeFile file("app/itinere-release.jks")
+                      storeFile file("itinere-release.jks")
                       storePassword project.findProperty('RELEASE_STORE_PASSWORD') ?: ''
                       keyAlias project.findProperty('RELEASE_KEY_ALIAS') ?: ''
                       keyPassword project.findProperty('RELEASE_KEY_PASSWORD') ?: ''
