@@ -1,25 +1,16 @@
 {
-  "appId": "com.symphoniertech.itinere",
+  "appId": "symphoniertech.itinere",
   "appName": "Itinere",
   "webDir": "public",
-  "bundledWebRuntime": false,
-  "plugins": {
-    "Geolocation": {
-      "location": true
-    }
-  },
   "server": {
     "url": "https://itinere.pro:8443",
-    "cleartext": false,
-    "allowNavigation": [
-      "*.itinere.pro",
-      "*.mapbox.com",
-      "*"
-    ]
+    "cleartext": false
   },
-  "android": {
-    "allowMixedContent": true,
-    "preferredColorScheme": "light",
-    "androidLaunchMode": "singleTask"
+  "plugins": {
+    "CapacitorPasskey": {
+      "origin": "https://itinere.pro:8443",
+      "autoShim": true,
+      "domains": ["itinere.pro"]
+    }
   }
 }
