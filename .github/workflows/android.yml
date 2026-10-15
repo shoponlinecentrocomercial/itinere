@@ -89,7 +89,7 @@ jobs:
           import re
     
           with open('build.gradle', 'r') as f:
-          content = f.read()
+            content = f.read()
     
           # Bloque de signingConfigs a insertar
           signing_block = '''
@@ -115,7 +115,7 @@ jobs:
           )
     
           with open('build.gradle', 'w') as f:
-          f.write(content)
+            f.write(content)
           PYEOF
 
           python3 /tmp/patch_gradle.py
