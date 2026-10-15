@@ -60,6 +60,7 @@
 
   // ⬇️ ESTO VA PRIMERO: instalar el shim de WebAuthn
   await CapacitorPasskey.autoShimWebAuthn();
+  alert('WebAuthn shim instalado');
 
   // A partir de aquí, el resto del código
   const statusEl = document.getElementById('status');
