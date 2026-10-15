@@ -84,12 +84,12 @@ jobs:
       - name: Configure Release Signing
         run: |
           cd android/app
-    
-          # Insertar signingConfigs justo después de la apertura del bloque android {
-          python3 << 'PYEOF'
+
+          cat > /tmp/patch_gradle.py << 'PYEOF'
           import re
+    
           with open('build.gradle', 'r') as f:
-            content = f.read()
+          content = f.read()
     
           # Bloque de signingConfigs a insertar
           signing_block = '''
@@ -108,18 +108,20 @@ jobs:
     
           # Añadir signingConfig al buildType release si no está
           content = re.sub(
-          r'(release\s*\{)',
-          r'\1\n            signingConfig signingConfigs.release',
-          content,
-          count=1
+            r'(release\s*\{)',
+            r'\1\n            signingConfig signingConfigs.release',
+            content,
+            count=1
           )
     
           with open('build.gradle', 'w') as f:
-            f.write(content)
-    
-            print("=== build.gradle después del parcheo ===")
-            cat build.gradle
-            PYEOF
+          f.write(content)
+          PYEOF
+
+          python3 /tmp/patch_gradle.py
+
+          echo "=== build.gradle después del parcheo ==="
+          cat build.gradle
 
       - name: Install assets
         run: npm install @capacitor/assets --save-dev
