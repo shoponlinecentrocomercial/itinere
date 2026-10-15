@@ -83,21 +83,13 @@ jobs:
       - name: Configure Release Signing
         run: |
           cd android/app
-      
-          # Insertar el bloque signingConfigs justo después de "android {"
-          sed -i '/^android {/a\
-          signingConfigs {\
-          release {\
-          storeFile file(RELEASE_STORE_FILE)\
-          storePassword RELEASE_STORE_PASSWORD\
-          keyAlias RELEASE_KEY_ALIAS\
-          keyPassword RELEASE_KEY_PASSWORD\
-          }\
-          }' build.gradle
-      
-          # Añadir signingConfig al buildType release
-          sed -i '/release {/a\            signingConfig signingConfigs.release' build.gradle
-      
+
+          # 1) Insertar el bloque signingConfigs justo después de "android {"
+          sed -i 's|^android {|android {\n    signingConfigs {\n        release {\n            storeFile file(RELEASE_STORE_FILE)\n            storePassword RELEASE_STORE_PASSWORD\n            keyAlias RELEASE_KEY_ALIAS\n            keyPassword RELEASE_KEY_PASSWORD\n        }\n    }|' build.gradle
+
+          # 2) Insertar signingConfig dentro del bloque release de buildTypes
+          sed -i 's|release {|release {\n            signingConfig signingConfigs.release|' build.gradle
+
           echo "=== build.gradle después del parcheo ==="
           cat build.gradle
       
