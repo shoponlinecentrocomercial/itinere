@@ -71,6 +71,14 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/itinere-release.jks
           ls -la android/app/itinere-release.jks
 
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease \
+            -PRELEASE_STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -PRELEASE_KEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -PRELEASE_KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
+
       - name: Create signing config file
         run: |
           cd android
@@ -84,10 +92,10 @@ jobs:
           android {
               signingConfigs {
                   release {
-                      storeFile file("app/${keystoreProperties['storeFile']}")
-                      storePassword keystoreProperties['storePassword']
-                      keyAlias keystoreProperties['keyAlias']
-                      keyPassword keystoreProperties['keyPassword']
+                      storeFile file("app/itinere-release.jks")
+                      storePassword RELEASE_STORE_PASSWORD
+                      keyAlias RELEASE_KEY_ALIAS
+                      keyPassword RELEASE_KEY_PASSWORD
                   }
               }
               buildTypes {
