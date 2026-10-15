@@ -54,16 +54,23 @@
     <button id="trackBtn">Activar seguimiento</button>
   </div>
 
-  <script type="module">
-    import { Geolocation } from '@capacitor/geolocation';
+<script type="module">
+  import { Geolocation } from '@capacitor/geolocation';
+  import { CapacitorPasskey } from '@capgo/capacitor-passkey';
 
-    const statusEl = document.getElementById('status');
-    const trackBtn = document.getElementById('trackBtn');
+  // ⬇️ ESTO VA PRIMERO: instalar el shim de WebAuthn
+  await CapacitorPasskey.autoShimWebAuthn();
 
-    async function requestLocationPermission() {
-      const permission = await Geolocation.requestPermissions();
-      return permission.location === 'granted';
-    }
+  // A partir de aquí, el resto del código
+  const statusEl = document.getElementById('status');
+  const trackBtn = document.getElementById('trackBtn');
+
+  async function requestLocationPermission() {
+    const permission = await Geolocation.requestPermissions();
+    return permission.location === 'granted';
+  }
+
+
 
     function sendLocation(coords) {
       fetch('https://itinere.pro:8443/actualizar-ubicacion', {
