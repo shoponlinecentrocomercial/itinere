@@ -65,6 +65,62 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+# ⬇️ Decodificar el keystore DENTRO del proyecto Android
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/itinere-release.jks
+          ls -la android/app/itinere-release.jks
+
+# ⬇️ Escribir credenciales en gradle.properties (forma que Gradle respeta)
+      - name: Write signing properties
+        run: |
+          cd android
+          echo "RELEASE_STORE_FILE=itinere-release.jks" >> gradle.properties
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
+          echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> gradle.properties
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+
+# ⬇️ Parchear build.gradle de app/ insertando la firma en el bloque android{} existente
+      - name: Configure Release Signing
+        run: |
+          cd android/app
+    
+          # Insertar signingConfigs justo después de la apertura del bloque android {
+          python3 << 'PYEOF'
+          import re
+          with open('build.gradle', 'r') as f:
+            content = f.read()
+    
+          # Bloque de signingConfigs a insertar
+          signing_block = '''
+          signingConfigs {
+            release {
+                storeFile file(RELEASE_STORE_FILE)
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
+          }
+          '''
+    
+          # Insertar después de la primera apertura "android {"
+          content = content.replace('android {', 'android {' + signing_block, 1)
+    
+          # Añadir signingConfig al buildType release si no está
+          content = re.sub(
+          r'(release\s*\{)',
+          r'\1\n            signingConfig signingConfigs.release',
+          content,
+          count=1
+          )
+    
+          with open('build.gradle', 'w') as f:
+            f.write(content)
+    
+            print("=== build.gradle después del parcheo ===")
+            cat build.gradle
+            PYEOF
+
       - name: Install assets
         run: npm install @capacitor/assets --save-dev
 
