@@ -115,6 +115,12 @@
     }
 
     trackBtn.addEventListener('click', startTracking);
+
+import { CapacitorPasskey } from '@capgo/capacitor-passkey';
+
+// Instala el shim para que WebAuthn funcione en el WebView
+await CapacitorPasskey.autoShimWebAuthn();
+    
   </script>
 </body>
 </html>
