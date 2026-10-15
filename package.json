@@ -12,6 +12,7 @@
     "node": ">=20.6.0"
   },
   "dependencies": {
+    "@capgo/capacitor-passkey": "^8.5.7",
     "@simplewebauthn/server": "^11.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
