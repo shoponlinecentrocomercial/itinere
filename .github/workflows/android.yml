@@ -27,6 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Verify plugin is installed
+        run: |
+          echo "=== Buscando capacitor-passkey en node_modules ==="
+          ls -la node_modules/@capgo/ 2>/dev/null || echo "NO HAY CARPETA @capgo"
+          echo "=== Buscando en package.json ==="
+          grep -i "passkey" package.json || echo "NO ESTÁ EN PACKAGE.JSON"
+
       - name: Remove existing Android platform
         run: rm -rf android
 
