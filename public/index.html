@@ -55,74 +55,84 @@
   </div>
 
 <script type="module">
-  import { Geolocation } from '@capacitor/geolocation';
-  import { CapacitorPasskey } from '@capgo/capacitor-passkey';
+<script type="module">
+    import { Geolocation } from '@capacitor/geolocation';
+    import { CapacitorHttp } from '@capacitor/core';
+    import { registerPlugin } from '@capacitor/core';
 
-  // ⬇️ ESTO VA PRIMERO: instalar el shim de WebAuthn
-  await CapacitorPasskey.autoShimWebAuthn();
+    const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
 
-  // A partir de aquí, el resto del código
-  const statusEl = document.getElementById('status');
-  const trackBtn = document.getElementById('trackBtn');
+    const statusEl = document.getElementById('status');
+    const trackBtn = document.getElementById('trackBtn');
+    let watcherId = null;
 
-  async function requestLocationPermission() {
-    const permission = await Geolocation.requestPermissions();
-    return permission.location === 'granted';
-  }
-
-
-
-    function sendLocation(coords) {
-      fetch('https://itinere.pro:8443/actualizar-ubicacion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          accuracy: coords.accuracy,
-          altitude: coords.altitude,
-          speed: coords.speed,
-          timestamp: Date.now()
-        })
-      }).then(() => {
-        statusEl.textContent = `GPS OK: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
-      }).catch(err => {
-        statusEl.textContent = 'Error enviando ubicación al backend';
-        console.error(err);
-      });
+    // Función para enviar la ubicación (usando CapacitorHttp para evitar el bloqueo de 5 min)
+    async function sendLocation(coords) {
+        try {
+            await CapacitorHttp.post({
+                url: 'https://itinere.pro:8443/actualizar-ubicacion',
+                headers: { 'Content-Type': 'application/json' },
+                data: {
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    accuracy: coords.accuracy,
+                    altitude: coords.altitude,
+                    speed: coords.speed,
+                    timestamp: Date.now()
+                },
+                // Importante para que las cookies de sesión viajen
+                webFetchExtra: { credentials: 'include' } 
+            });
+            statusEl.textContent = `GPS OK: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+        } catch (err) {
+            console.error('Error enviando ubicación:', err);
+            statusEl.textContent = 'Error enviando ubicación';
+        }
     }
 
     async function startTracking() {
-      statusEl.textContent = 'Solicitando permisos de ubicación…';
-
-      const allowed = await requestLocationPermission();
-      if (!allowed) {
-        statusEl.textContent = 'Permiso de ubicación denegado';
-        return;
-      }
-
-      statusEl.textContent = 'GPS activo. Esperando coordenadas…';
-
-      Geolocation.watchPosition(
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        },
-        (position) => {
-          if (!position || !position.coords) return;
-          sendLocation(position.coords);
-        },
-        (error) => {
-          statusEl.textContent = 'Error de geolocalización';
-          console.error(error);
+        if (watcherId) {
+            // Si ya está activo, lo paramos
+            await BackgroundGeolocation.removeWatcher({ id: watcherId });
+            watcherId = null;
+            trackBtn.textContent = 'Activar seguimiento';
+            statusEl.textContent = 'Seguimiento detenido';
+            return;
         }
-      );
+
+        statusEl.textContent = 'Solicitando permisos...';
+        trackBtn.textContent = 'Detener seguimiento';
+
+        try {
+            watcherId = await BackgroundGeolocation.addWatcher(
+                {
+                    backgroundMessage: "Grabando ruta en segundo plano…",
+                    backgroundTitle: "Itinere - Ruta activa",
+                    requestPermissions: true,
+                    stale: false,
+                    distanceFilter: 5 // metros
+                },
+                (location, error) => {
+                    if (error) {
+                        if (error.code === "NOT_AUTHORIZED") {
+                            statusEl.textContent = 'Permiso de ubicación denegado';
+                            trackBtn.textContent = 'Activar seguimiento';
+                            watcherId = null;
+                        }
+                        return;
+                    }
+                    // location contiene los datos
+                    sendLocation(location);
+                }
+            );
+            statusEl.textContent = 'GPS activo en segundo plano.';
+        } catch (e) {
+            statusEl.textContent = 'Error al iniciar: ' + e.message;
+            trackBtn.textContent = 'Activar seguimiento';
+        }
     }
 
     trackBtn.addEventListener('click', startTracking);
-
-  </script>
+</script>
 </body>
 </html>
