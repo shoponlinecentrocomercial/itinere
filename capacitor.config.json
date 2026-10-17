@@ -6,6 +6,9 @@
     "url": "https://itinere.pro:8443",
     "cleartext": false
   },
+  "android": {
+     "useLegacyBridge": true
+  },
   "plugins": {
     "CapacitorPasskey": {
       "origin": "https://itinere.pro:8443",
