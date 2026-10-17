@@ -56,45 +56,17 @@
 
 <script type="module">
 <script type="module">
-    import { Geolocation } from '@capacitor/geolocation';
+    import { BackgroundGeolocation } from '@capgo/background-geolocation';
     import { CapacitorHttp } from '@capacitor/core';
-    import { registerPlugin } from '@capacitor/core';
-
-    const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
 
     const statusEl = document.getElementById('status');
     const trackBtn = document.getElementById('trackBtn');
-    let watcherId = null;
-
-    // Función para enviar la ubicación (usando CapacitorHttp para evitar el bloqueo de 5 min)
-    async function sendLocation(coords) {
-        try {
-            await CapacitorHttp.post({
-                url: 'https://itinere.pro:8443/actualizar-ubicacion',
-                headers: { 'Content-Type': 'application/json' },
-                data: {
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                    accuracy: coords.accuracy,
-                    altitude: coords.altitude,
-                    speed: coords.speed,
-                    timestamp: Date.now()
-                },
-                // Importante para que las cookies de sesión viajen
-                webFetchExtra: { credentials: 'include' } 
-            });
-            statusEl.textContent = `GPS OK: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
-        } catch (err) {
-            console.error('Error enviando ubicación:', err);
-            statusEl.textContent = 'Error enviando ubicación';
-        }
-    }
+    let isTracking = false;
 
     async function startTracking() {
-        if (watcherId) {
-            // Si ya está activo, lo paramos
-            await BackgroundGeolocation.removeWatcher({ id: watcherId });
-            watcherId = null;
+        if (isTracking) {
+            await BackgroundGeolocation.stop();
+            isTracking = false;
             trackBtn.textContent = 'Activar seguimiento';
             statusEl.textContent = 'Seguimiento detenido';
             return;
@@ -104,27 +76,35 @@
         trackBtn.textContent = 'Detener seguimiento';
 
         try {
-            watcherId = await BackgroundGeolocation.addWatcher(
+            await BackgroundGeolocation.start(
                 {
                     backgroundMessage: "Grabando ruta en segundo plano…",
                     backgroundTitle: "Itinere - Ruta activa",
                     requestPermissions: true,
                     stale: false,
-                    distanceFilter: 5 // metros
+                    distanceFilter: 5,
+                    // ⬇️ LA CLAVE: el envío lo hace el código nativo
+                    url: 'https://itinere.pro:8443/actualizar-ubicacion',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 },
                 (location, error) => {
+                    // Este callback solo actualiza la UI cuando la app está despierta
                     if (error) {
                         if (error.code === "NOT_AUTHORIZED") {
                             statusEl.textContent = 'Permiso de ubicación denegado';
                             trackBtn.textContent = 'Activar seguimiento';
-                            watcherId = null;
+                            isTracking = false;
                         }
                         return;
                     }
-                    // location contiene los datos
-                    sendLocation(location);
+                    if (location) {
+                        statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+                    }
                 }
             );
+            isTracking = true;
             statusEl.textContent = 'GPS activo en segundo plano.';
         } catch (e) {
             statusEl.textContent = 'Error al iniciar: ' + e.message;
