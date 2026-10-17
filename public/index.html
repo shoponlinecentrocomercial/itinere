@@ -53,17 +53,13 @@
     <div id="status">Inicializando GPS…</div>
     <button id="trackBtn">Activar seguimiento</button>
   </div>
-
 <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    import { initializeApp } from 'firebase/app';
+    import { getAuth, signInAnonymously } from 'firebase/auth';
+    import { BackgroundGeolocationFirestore } from '@ajuarezso/capacitor-background-geolocation-firestore';
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
+    // ⬇️ PEGA AQUÍ TU firebaseConfig DE LA CONSOLA DE FIREBASE
+    const firebaseConfig = {
     apiKey: "AIzaSyDhM_0SU94n5gkCorzBVZaxjBfOKPiaLDQ",
     authDomain: "itinere-rutas.firebaseapp.com",
     projectId: "itinere-rutas",
@@ -73,47 +69,85 @@
     measurementId: "G-L82LY1DLJ5"
   };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const auth = getAuth(app);
-  await signInAnonymously(auth);
-  const user = auth.currentUser;
 
-  // Iniciar el watcher (esto es del plugin, no del de Firestore)
-await BackgroundGeolocationFirestore.start(
-  {
-    backgroundTitle: 'Itinere - Ruta activa',
-    backgroundMessage: 'Grabando ruta en segundo plano…',
-    distanceFilter: 5,
-    requestPermissions: true
-  },
-  (location, error) => {
-    if (location) {
-      statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}`;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const statusEl = document.getElementById('status');
+    const trackBtn = document.getElementById('trackBtn');
+    let isTracking = false;
+    let tokenRefreshInterval = null;
+
+    async function startTracking() {
+        if (isTracking) {
+            // Parar
+            await BackgroundGeolocationFirestore.clearFirestoreContext();
+            await BackgroundGeolocationFirestore.stop();
+            if (tokenRefreshInterval) clearInterval(tokenRefreshInterval);
+            isTracking = false;
+            trackBtn.textContent = 'Activar seguimiento';
+            statusEl.textContent = 'Seguimiento detenido';
+            return;
+        }
+
+        statusEl.textContent = 'Autenticando con Firebase...';
+        trackBtn.textContent = 'Detener seguimiento';
+
+        try {
+            // 1. Autenticación anónima en Firebase
+            const userCredential = await signInAnonymously(auth);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken();
+
+            // 2. Generar un ID de ruta único
+            const rutaId = 'ruta_' + Date.now();
+
+            // 3. Arrancar el watcher del GPS
+            await BackgroundGeolocationFirestore.start({
+                backgroundTitle: 'Itinere - Ruta activa',
+                backgroundMessage: 'Grabando ruta en segundo plano…',
+                distanceFilter: 5,
+                requestPermissions: true,
+            }, (location, error) => {
+                if (location) {
+                    statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}`;
+                }
+            });
+
+            // 4. Configurar la escritura nativa a Firestore
+            await BackgroundGeolocationFirestore.setFirestoreContext({
+                docPath: `rutas/${rutaId}`,
+                locationField: 'puntos',
+                projectId: firebaseConfig.projectId,
+                idToken: idToken,
+                writeThresholdMeters: 20, // Escribe cada 20m
+            });
+
+            // 5. Refrescar el token cada 50 minutos (expira a los 60)
+            tokenRefreshInterval = setInterval(async () => {
+                const newToken = await user.getIdToken(true);
+                await BackgroundGeolocationFirestore.setFirestoreContext({
+                    docPath: `rutas/${rutaId}`,
+                    locationField: 'puntos',
+                    projectId: firebaseConfig.projectId,
+                    idToken: newToken,
+                    writeThresholdMeters: 20,
+                });
+                console.log('Token de Firestore refrescado');
+            }, 50 * 60 * 1000);
+
+            isTracking = true;
+            statusEl.textContent = `GPS activo. Ruta: ${rutaId}`;
+            console.log('Ruta ID para el servidor:', rutaId);
+
+        } catch (e) {
+            statusEl.textContent = 'Error al iniciar: ' + e.message;
+            trackBtn.textContent = 'Activar seguimiento';
+        }
     }
-  }
-);
 
-// Configurar la escritura nativa a Firestore (esto ES la clave)
-await BackgroundGeolocationFirestore.setFirestoreContext({
-  docPath: `rutas/${rutaId}`,  // El ID de la ruta actual
-  locationField: 'puntos',      // Campo donde se guardan los puntos
-  projectId: firebaseConfig.projectId,
-  idToken: await user.getIdToken(),
-  writeThresholdMeters: 20      // Escribe cada 20m
-});
-
-   setInterval(async () => {
-  await BackgroundGeolocationFirestore.setFirestoreContext({
-    docPath: `rutas/${rutaId}`,
-    locationField: 'puntos',
-    projectId: firebaseConfig.projectId,
-    idToken: await user.getIdToken(true), // true = forzar refresco
-    writeThresholdMeters: 20
-  });
-}, 50 * 60 * 1000);
-  
+    trackBtn.addEventListener('click', startTracking);
 </script>
+  
 </body>
 </html>
