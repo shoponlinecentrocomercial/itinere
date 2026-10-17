@@ -40,6 +40,14 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Add Background Geolocation Permissions
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          # Insertar permisos antes de <application>
+          sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n\n    <application|' "$MANIFEST"
+          echo "=== Manifest después del parcheo ==="
+          grep -A2 -B2 "uses-permission" "$MANIFEST" | head -30
+
       - name: Inspect generated build.gradle
         run: |
           echo "=== Contenido de android/build.gradle ==="
