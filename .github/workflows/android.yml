@@ -40,6 +40,9 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Sync Capacitor
+        run: npx cap sync android
+
       - name: Add Background Geolocation Permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
@@ -76,9 +79,6 @@ jobs:
     
           echo "=== MainActivity.java modificado ==="
           cat "$MAIN_ACTIVITY"
-
-      - name: Sync Capacitor
-        run: npx cap sync android
 
 # ⬇️ Decodificar el keystore DENTRO del proyecto Android
       - name: Decode Keystore
