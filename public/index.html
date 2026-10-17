@@ -74,50 +74,30 @@
         trackBtn.textContent = 'Detener seguimiento';
 
         try {
-            // 1. Verificar permisos
-            const perms = await BackgroundLocation.checkPermissions();
-            
-            if (perms.location !== 'granted') {
-                await BackgroundLocation.requestPermissions({ permissions: ['location'] });
-            }
-            if (perms.backgroundLocation !== 'granted') {
-                await BackgroundLocation.requestPermissions({ permissions: ['backgroundLocation'] });
-            }
+            // 1. Verificar permisos antes de arrancar
+const perms = await BackgroundLocation.checkPermissions();
+statusEl.textContent = `Foreground: ${perms.location}, Background: ${perms.backgroundLocation}`;
 
-            // 2. Configurar el plugin (incluye el envío nativo a tu backend)
-            await BackgroundLocation.configure({
-                distanceFilter: 5,
-                desiredAccuracy: 'high',
-                heartbeatInterval: 15,
-                http: {
-                    url: 'https://itinere.pro:8443/actualizar-ubicacion',
-                    headers: { 'Content-Type': 'application/json' },
-                    buffer: { maxSize: 1000 }
-                },
-                notification: {
-                    title: 'Itinere - Ruta activa',
-                    text: 'Grabando ruta en segundo plano…'
-                },
-                debug: true
-            });
+if (perms.backgroundLocation !== 'granted') {
+    statusEl.textContent = 'Falta permiso de ubicación en segundo plano. Ve a Ajustes > Apps > Itinere > Permisos > Ubicación > Permitir todo el tiempo.';
+    // Intentar solicitarlo de nuevo (por si acaso)
+    await BackgroundLocation.requestPermissions({ permissions: ['backgroundLocation'] });
+}
 
-            // 3. Escuchar eventos (solo para UI)
-            BackgroundLocation.addListener('onLocation', (location) => {
-                statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
-            });
-
-            BackgroundLocation.addListener('onHttp', (event) => {
-                if (event.success) {
-                    console.log('POST nativo OK, status:', event.statusCode);
-                } else {
-                    console.warn('POST nativo falló, buffered:', event.bufferedCount);
-                }
-            });
-
-            // 4. Arrancar
-            await BackgroundLocation.start();
-            isTracking = true;
-            statusEl.textContent = 'GPS activo en segundo plano.';
+// 2. Configurar y arrancar
+try {
+    await BackgroundLocation.configure({ /* tu config actual */ });
+    
+    // Escuchar el evento de HTTP para ver si el envío nativo funciona
+    BackgroundLocation.addListener('onHttp', (event) => {
+        statusEl.textContent = `HTTP: success=${event.success}, status=${event.statusCode}, buffered=${event.bufferedCount}`;
+    });
+    
+    await BackgroundLocation.start();
+    statusEl.textContent = 'Tracking iniciado. (Si no llegan datos, revisa el permiso de background)';
+} catch (e) {
+    statusEl.textContent = 'Error al iniciar: ' + e.message;
+}
         } catch (e) {
             statusEl.textContent = 'Error al iniciar: ' + e.message;
             trackBtn.textContent = 'Activar seguimiento';
