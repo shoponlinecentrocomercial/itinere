@@ -76,6 +76,44 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+  await signInAnonymously(auth);
+  const user = auth.currentUser;
+
+  // Iniciar el watcher (esto es del plugin, no del de Firestore)
+await BackgroundGeolocationFirestore.start(
+  {
+    backgroundTitle: 'Itinere - Ruta activa',
+    backgroundMessage: 'Grabando ruta en segundo plano…',
+    distanceFilter: 5,
+    requestPermissions: true
+  },
+  (location, error) => {
+    if (location) {
+      statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}`;
+    }
+  }
+);
+
+// Configurar la escritura nativa a Firestore (esto ES la clave)
+await BackgroundGeolocationFirestore.setFirestoreContext({
+  docPath: `rutas/${rutaId}`,  // El ID de la ruta actual
+  locationField: 'puntos',      // Campo donde se guardan los puntos
+  projectId: firebaseConfig.projectId,
+  idToken: await user.getIdToken(),
+  writeThresholdMeters: 20      // Escribe cada 20m
+});
+
+   setInterval(async () => {
+  await BackgroundGeolocationFirestore.setFirestoreContext({
+    docPath: `rutas/${rutaId}`,
+    locationField: 'puntos',
+    projectId: firebaseConfig.projectId,
+    idToken: await user.getIdToken(true), // true = forzar refresco
+    writeThresholdMeters: 20
+  });
+}, 50 * 60 * 1000);
+  
 </script>
 </body>
 </html>
