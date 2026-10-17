@@ -55,8 +55,7 @@
   </div>
 
 <script type="module">
-    import { BackgroundGeolocation } from '@capgo/background-geolocation';
-    import { CapacitorHttp } from '@capacitor/core';
+    import { BackgroundLocation } from '@bglocation/capacitor';
 
     const statusEl = document.getElementById('status');
     const trackBtn = document.getElementById('trackBtn');
@@ -64,7 +63,7 @@
 
     async function startTracking() {
         if (isTracking) {
-            await BackgroundGeolocation.stop();
+            await BackgroundLocation.stop();
             isTracking = false;
             trackBtn.textContent = 'Activar seguimiento';
             statusEl.textContent = 'Seguimiento detenido';
@@ -75,34 +74,48 @@
         trackBtn.textContent = 'Detener seguimiento';
 
         try {
-            await BackgroundGeolocation.start(
-                {
-                    backgroundMessage: "Grabando ruta en segundo plano…",
-                    backgroundTitle: "Itinere - Ruta activa",
-                    requestPermissions: true,
-                    stale: false,
-                    distanceFilter: 5,
-                    // ⬇️ LA CLAVE: el envío lo hace el código nativo
+            // 1. Verificar permisos
+            const perms = await BackgroundLocation.checkPermissions();
+            
+            if (perms.location !== 'granted') {
+                await BackgroundLocation.requestPermissions({ permissions: ['location'] });
+            }
+            if (perms.backgroundLocation !== 'granted') {
+                await BackgroundLocation.requestPermissions({ permissions: ['backgroundLocation'] });
+            }
+
+            // 2. Configurar el plugin (incluye el envío nativo a tu backend)
+            await BackgroundLocation.configure({
+                distanceFilter: 5,
+                desiredAccuracy: 'high',
+                heartbeatInterval: 15,
+                http: {
                     url: 'https://itinere.pro:8443/actualizar-ubicacion',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' },
+                    buffer: { maxSize: 1000 }
                 },
-                (location, error) => {
-                    // Este callback solo actualiza la UI cuando la app está despierta
-                    if (error) {
-                        if (error.code === "NOT_AUTHORIZED") {
-                            statusEl.textContent = 'Permiso de ubicación denegado';
-                            trackBtn.textContent = 'Activar seguimiento';
-                            isTracking = false;
-                        }
-                        return;
-                    }
-                    if (location) {
-                        statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
-                    }
+                notification: {
+                    title: 'Itinere - Ruta activa',
+                    text: 'Grabando ruta en segundo plano…'
+                },
+                debug: true
+            });
+
+            // 3. Escuchar eventos (solo para UI)
+            BackgroundLocation.addListener('onLocation', (location) => {
+                statusEl.textContent = `GPS OK: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+            });
+
+            BackgroundLocation.addListener('onHttp', (event) => {
+                if (event.success) {
+                    console.log('POST nativo OK, status:', event.statusCode);
+                } else {
+                    console.warn('POST nativo falló, buffered:', event.bufferedCount);
                 }
-            );
+            });
+
+            // 4. Arrancar
+            await BackgroundLocation.start();
             isTracking = true;
             statusEl.textContent = 'GPS activo en segundo plano.';
         } catch (e) {
