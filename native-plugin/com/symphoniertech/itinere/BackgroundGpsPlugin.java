@@ -2,6 +2,7 @@ package symphoniertech.itinere;
 
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -32,6 +33,12 @@ public class BackgroundGpsPlugin extends Plugin {
     public void getStoredPoints(PluginCall call) {
         JSArray points = new JSArray();
         File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
+        
+        JSObject ret = new JSObject();
+        ret.put("fileExists", file.exists());
+        ret.put("filePath", file.getAbsolutePath());
+        ret.put("fileSize", file.exists() ? file.length() : 0);
+        
         if (file.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
@@ -39,12 +46,33 @@ public class BackgroundGpsPlugin extends Plugin {
                     points.put(line);
                 }
             } catch (Exception e) {
-                call.reject("Error leyendo puntos: " + e.getMessage());
-                return;
+                ret.put("error", e.getMessage());
             }
         }
-        JSObject ret = new JSObject();
         ret.put("points", points);
+        call.resolve(ret);
+    }
+
+    // Método de diagnóstico: comprueba si el servicio está vivo y si el archivo crece
+    @PluginMethod
+    public void getDebugInfo(PluginCall call) {
+        JSObject ret = new JSObject();
+        File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
+        ret.put("fileExists", file.exists());
+        ret.put("fileSize", file.exists() ? file.length() : 0);
+        ret.put("lastModified", file.exists() ? file.lastModified() : 0);
+        
+        // Comprobar si el servicio está en ejecución consultando el estado de la app
+        android.app.ActivityManager am = (android.app.ActivityManager) getContext().getSystemService(android.content.Context.ACTIVITY_SERVICE);
+        boolean serviceRunning = false;
+        for (android.app.ActivityManager.RunningServiceInfo service : am.getRunningServices(Integer.MAX_VALUE)) {
+            if (GpsTrackingService.class.getName().equals(service.service.getClassName())) {
+                serviceRunning = true;
+                break;
+            }
+        }
+        ret.put("serviceRunning", serviceRunning);
+        
         call.resolve(ret);
     }
 }
