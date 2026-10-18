@@ -40,6 +40,21 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Add Android platform
+        run: npx cap add android
+
+      # ⬇️ COPIAR EL PLUGIN NATIVO      
+      - name: Copy native plugin
+        run: |
+          mkdir -p android/app/src/main/java/symphoniertech/itinere
+          cp native-plugin/com/symphoniertech/itinere/BackgroundGpsPlugin.java android/app/src/main/java/symphoniertech/itinere/
+
+      # ⬇️ PARCHEAR MainActivity (o copiar uno tuyo)
+      - name: Patch MainActivity
+        run: |
+          MAIN=$(find android/app/src/main/java -name "MainActivity.java")
+          # Aquí iría tu sed para insertar registerPlugin(...)
+
       - name: Sync Capacitor
         run: npx cap sync android
 
