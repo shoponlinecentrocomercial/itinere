@@ -18,6 +18,16 @@ public class BackgroundGpsPlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
+        // Verificar permiso de ubicación
+        if (getActivity().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) 
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+          // Solicitar permiso (esto mostrará el diálogo)
+          getActivity().requestPermissions(
+            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 
+            1001);
+          call.reject("Permiso de ubicación no concedido. Concede el permiso y vuelve a intentarlo.");
+          return;
+        }
         Intent intent = new Intent(getContext(), GpsTrackingService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getContext().startForegroundService(intent);
