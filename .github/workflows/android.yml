@@ -44,7 +44,7 @@ jobs:
       - name: Copy native plugin
         run: |
           mkdir -p android/app/src/main/java/symphoniertech/itinere
-          cp native-plugin/symphoniertech/itinere/BackgroundGpsPlugin.java android/app/src/main/java/symphoniertech/itinere/
+          cp native-plugin/com/symphoniertech/itinere/BackgroundGpsPlugin.java android/app/src/main/java/symphoniertech/itinere/
           echo "=== Plugin copiado ==="
           ls -la android/app/src/main/java/symphoniertech/itinere/
 
