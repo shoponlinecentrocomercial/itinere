@@ -89,6 +89,16 @@ jobs:
           echo "=== Después de modificar: ==="
           grep "com.android.tools.build:gradle" build.gradle
 
+      - name: Enable BuildConfig generation
+        run: |
+          cd android/app
+          # Insertar buildFeatures dentro del bloque android {}
+          # Buscamos la primera línea "android {" y añadimos el bloque después
+          sed -i '/^android {/a\    buildFeatures {\n        buildConfig = true\n    }' build.gradle
+    
+          echo "=== app/build.gradle después del parcheo ==="
+          grep -A 3 "buildFeatures" build.gradle
+
       - name: Enable WebView debugging
         run: |
           # Busca el MainActivity.java generado por Capacitor
