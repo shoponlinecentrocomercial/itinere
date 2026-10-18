@@ -54,6 +54,14 @@
     <button id="trackBtn">Activar seguimiento</button>
   </div>
 <script type="module">
+  import { registerPlugin } from '@capacitor/core';
+const BackgroundGps = registerPlugin('BackgroundGps');
+
+// Prueba rápida
+BackgroundGps.start({}).then(res => {
+    console.log('Plugin nativo OK:', res);
+    document.getElementById('status').textContent = 'Plugin nativo: ' + res.status;
+});
     import { initializeApp } from 'firebase/app';
     import { getAuth, signInAnonymously } from 'firebase/auth';
     import { BackgroundGeolocationFirestore } from '@ajuarezso/capacitor-background-geolocation-firestore';
