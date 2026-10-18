@@ -104,6 +104,16 @@ jobs:
           echo "=== app/build.gradle después del parcheo ==="
           grep -A 3 "buildFeatures" build.gradle
 
+      - name: Add Play Services Location dependency
+        run: |
+          cd android/app
+          # Insertar la dependencia dentro del bloque dependencies {}
+          # Buscamos "dependencies {" y añadimos la línea después
+          sed -i '/^dependencies {/a\    implementation "com.google.android.gms:play-services-location:21.0.1"' build.gradle
+    
+          echo "=== dependencies después del parcheo ==="
+          grep -A 3 "dependencies {" build.gradle
+
       - name: Enable WebView debugging
         run: |
           # Busca el MainActivity.java generado por Capacitor
