@@ -40,20 +40,29 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Add Android platform
-        run: npx cap add android
-
-      # ⬇️ COPIAR EL PLUGIN NATIVO      
+      # ⬇️ COPIAR EL PLUGIN NATIVO AL PROYECTO ANDROID
       - name: Copy native plugin
         run: |
           mkdir -p android/app/src/main/java/symphoniertech/itinere
-          cp native-plugin/com/symphoniertech/itinere/BackgroundGpsPlugin.java android/app/src/main/java/symphoniertech/itinere/
+          cp native-plugin/symphoniertech/itinere/BackgroundGpsPlugin.java android/app/src/main/java/symphoniertech/itinere/
+          echo "=== Plugin copiado ==="
+          ls -la android/app/src/main/java/symphoniertech/itinere/
 
-      # ⬇️ PARCHEAR MainActivity (o copiar uno tuyo)
-      - name: Patch MainActivity
+      # ⬇️ PARCHEAR MainActivity PARA REGISTRAR EL PLUGIN
+      - name: Patch MainActivity to register plugin
         run: |
-          MAIN=$(find android/app/src/main/java -name "MainActivity.java")
-          # Aquí iría tu sed para insertar registerPlugin(...)
+          MAIN_ACTIVITY=$(find android/app/src/main/java -name "MainActivity.java")
+          echo "Parcheando: $MAIN_ACTIVITY"
+    
+          # Añadir import
+          sed -i 's|import com.getcapacitor.BridgeActivity;|import com.getcapacitor.BridgeActivity;\nimport symphoniertech.itinere.BackgroundGpsPlugin;|' "$MAIN_ACTIVITY"
+    
+          # Añadir registerPlugin dentro de onCreate
+          # Primero nos aseguramos de que existe onCreate
+          sed -i 's|public class MainActivity extends BridgeActivity {}|public class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(BackgroundGpsPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}|' "$MAIN_ACTIVITY"
+    
+          echo "=== MainActivity.java después del parcheo ==="
+          cat "$MAIN_ACTIVITY"
 
       - name: Sync Capacitor
         run: npx cap sync android
