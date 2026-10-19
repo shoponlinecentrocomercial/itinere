@@ -50,6 +50,16 @@ public void stop(PluginCall call) {
 }
 
     @PluginMethod
+public void checkBackgroundPermission(PluginCall call) {
+    boolean granted = getActivity().checkSelfPermission(
+        android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) 
+        == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    JSObject ret = new JSObject();
+    ret.put("granted", granted);
+    call.resolve(ret);
+}
+
+    @PluginMethod
 public void openLocationSettings(PluginCall call) {
     Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
     intent.setData(android.net.Uri.parse("package:" + getContext().getPackageName()));
