@@ -50,6 +50,15 @@ public void stop(PluginCall call) {
 }
 
     @PluginMethod
+public void openLocationSettings(PluginCall call) {
+    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+    intent.setData(android.net.Uri.parse("package:" + getContext().getPackageName()));
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    getContext().startActivity(intent);
+    call.resolve();
+}
+
+    @PluginMethod
     public void getStoredPoints(PluginCall call) {
         JSArray points = new JSArray();
         File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
