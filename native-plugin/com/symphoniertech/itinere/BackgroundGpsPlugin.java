@@ -69,6 +69,17 @@ public void openLocationSettings(PluginCall call) {
 }
 
     @PluginMethod
+public void clearPoints(PluginCall call) {
+    File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
+    if (file.exists()) {
+        file.delete();
+    }
+    JSObject ret = new JSObject();
+    ret.put("cleared", true);
+    call.resolve(ret);
+}
+
+    @PluginMethod
     public void getStoredPoints(PluginCall call) {
         JSArray points = new JSArray();
         File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
