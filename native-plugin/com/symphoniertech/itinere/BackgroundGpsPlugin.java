@@ -40,6 +40,16 @@ public void start(PluginCall call) {
 }
 
     @PluginMethod
+public void stop(PluginCall call) {
+    Intent intent = new Intent(getContext(), GpsTrackingService.class);
+    getContext().stopService(intent);
+    
+    JSObject ret = new JSObject();
+    ret.put("status", "stopped");
+    call.resolve(ret);
+}
+
+    @PluginMethod
     public void getStoredPoints(PluginCall call) {
         JSArray points = new JSArray();
         File file = new File(getContext().getFilesDir(), "gps_points.jsonl");
