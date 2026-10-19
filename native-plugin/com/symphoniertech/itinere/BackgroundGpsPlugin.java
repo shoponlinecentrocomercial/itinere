@@ -16,25 +16,16 @@ import java.io.FileReader;
 @CapacitorPlugin(name = "BackgroundGps")
 public class BackgroundGpsPlugin extends Plugin {
 
-    @PluginMethod
+@PluginMethod
 public void start(PluginCall call) {
-    // Comprobar si la actividad está en primer plano (no en pausa)
-    if (getActivity() == null || getActivity().isFinishing() || !getActivity().hasWindowFocus()) {
-        call.reject("La app debe estar en primer plano para arrancar el GPS. Vuelve a la app y pulsa de nuevo.");
-        return;
-    }
-
-    // Comprobar permiso
     if (getActivity().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) 
             != android.content.pm.PackageManager.PERMISSION_GRANTED) {
         getActivity().requestPermissions(
-            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
-                         android.Manifest.permission.ACCESS_COARSE_LOCATION}, 
-            1001);
-        call.reject("Permiso de ubicación no concedido. Acepta el diálogo y vuelve a pulsar.");
+            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1001);
+        call.reject("Permiso no concedido. Acepta el diálogo y vuelve a pulsar.");
         return;
     }
-
+    // Solo si el permiso está concedido, arrancamos el servicio
     // Arrancar el servicio
     Intent intent = new Intent(getContext(), GpsTrackingService.class);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
