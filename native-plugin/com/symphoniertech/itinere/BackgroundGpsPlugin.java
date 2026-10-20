@@ -18,15 +18,24 @@ public class BackgroundGpsPlugin extends Plugin {
 
 @PluginMethod
 public void start(PluginCall call) {
+    // 1. Comprobar permiso de ubicación en primer plano
     if (getActivity().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) 
             != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        
+        // Solicitar permiso (esto mostrará el diálogo nativo)
         getActivity().requestPermissions(
-            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1001);
-        call.reject("Permiso no concedido. Acepta el diálogo y vuelve a pulsar.");
+            new String[]{
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            }, 
+            1001
+        );
+        
+        call.reject("Permiso de ubicación no concedido. Acepta el diálogo y vuelve a intentarlo.");
         return;
     }
-    // Solo si el permiso está concedido, arrancamos el servicio
-    // Arrancar el servicio
+    
+    // 2. Si el permiso está concedido, arrancar el servicio
     Intent intent = new Intent(getContext(), GpsTrackingService.class);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         getContext().startForegroundService(intent);
