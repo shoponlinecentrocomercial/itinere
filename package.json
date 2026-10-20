@@ -12,14 +12,12 @@
     "node": ">=20.6.0"
   },
   "dependencies": {
-    "@ajuarezso/capacitor-background-geolocation-firestore": "^0.2.1",
-    "@capacitor-community/background-geolocation": "^1.2.26",
+    "@capacitor/app": "^8.1.2",
     "@capgo/capacitor-passkey": "^8.5.7",
     "@simplewebauthn/server": "^11.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "firebase": "^13.0.0",
     "http-proxy": "^1.18.1",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.10.0",
