@@ -12,6 +12,7 @@
     "node": ">=20.6.0"
   },
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor/app": "^8.1.2",
     "@capgo/capacitor-passkey": "^8.5.7",
     "@simplewebauthn/server": "^11.0.0",
