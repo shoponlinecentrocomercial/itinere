@@ -69,6 +69,10 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Check capacitor.plugins.json
+        run: |
+          find android -name "capacitor.plugins.json" -exec cat {} \;
+
       - name: Add Background Geolocation Permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
